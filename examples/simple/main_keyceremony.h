@@ -1,9 +1,9 @@
 #ifndef __MAIN_KEY_CEREMONY_H__
 #define __MAIN_KEY_CEREMONY_H__
 
-#include "keyceremony/coordinator.h"
-#include "keyceremony/messages.h"
-#include "keyceremony/trustee.h"
+#include <electionguard/keyceremony/coordinator.h>
+#include <electionguard/keyceremony/messages.h>
+#include <electionguard/keyceremony/trustee.h>
 
 /* Carry out the key ceremony phase of an election, storing the joint
 key and trustee_states in the provided pointers. */

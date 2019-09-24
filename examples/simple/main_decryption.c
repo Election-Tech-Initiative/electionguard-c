@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "decryption/coordinator.h"
-#include "decryption/trustee.h"
+#include <electionguard/decryption/coordinator.h>
+#include <electionguard/decryption/trustee.h>
 
 #include "main_decryption.h"
 #include "main_params.h"

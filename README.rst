@@ -1,8 +1,14 @@
-ElectionGuard SDK Mock Implementation
+ElectionGuard SDK No-Cryptography Implementation
 =====================================
 
 This implementation of the ElectionGuard SDK serves to showcase the API
-provided by the SDK. For more details about that API, see the
+provided by the SDK. It focuses on specifying and fixing the API.
+Although it currently doesn't have encryption, programming against the
+header files presented in the include document should allow you to
+develop a voting system that is automatically improved with encryption
+as the develoment of the ElectionGuard SDK continues.
+
+For more details about that API, see the
 :ref:`include`.
 
 .. _building:
@@ -10,45 +16,34 @@ provided by the SDK. For more details about that API, see the
 Building
 --------
 
-To enable cross-platform building, we use `cmake <https://cmake.org/>`_. Here
-we describe how to use Microsoft Visual Studio and :program:`make`, but other
-backends like :program:`ninja` should work as well.
+To enable cross-platform building, we use `cmake
+<https://cmake.org/>`_. Any generator should work, but we describe
+here how build using `Visual Studio
+<https://visualstudio.microsoft.com/>`_ and using a Unix-like shell.
 
 Visual Studio
 ~~~~~~~~~~~~~
 
-As long as you have the C++ CMake tools for Windows installed, :program:`cmake`
-should automatically integrate with Visual Studio. This means you can build the
-project from the IDE, for example by right-clicking :file:`CMakeLists.txt` and
-then selecting ``Build``.
+As long as you have the C++ CMake tools for Windows installed,
+:program:`cmake` should automatically integrate with Visual Studio.
+This means you can build the project from the IDE, for example by
+selecting ``Build > Build All`` in the menu.
 
 Unix-like Systems
 ~~~~~~~~~~~~~~~~~
 
-First use :program:`cmake` to generate build instructions for some
-generator like :program:`make` or :program:`ninja`. You can see a list
-of available generators by running ``cmake -G``. We will assume from
-now on that you are using the :program:`make` generator, but it should
-be straightforward to build the corresponding targets with whatever
-generator you choose to use.
+First create a build directory and configure the build.
 
 .. code:: sh
 
     mkdir build
-    cd build
-    cmake ..
+    cmake -S . -B build
 
 To build the SDK static library ``libelectionguard.a``, run
 
 .. code:: sh
 
-   make electionguard
-
-To build an example client of the SDK, run
-
-.. code:: sh
-
-   make simple
+   cmake --build build
 
 Testing
 --------
@@ -75,28 +70,45 @@ also execute the client directly to better examine the output it produces.
 Visual Studio
 ~~~~~~~~~~~~~
 
-As with building, you should be able to use the IDE to run the tests, for
-example by right-clicking :file:`CMakeLists.txt` and then selecing ``Run Tests``.
+To build and execute an example client of the SDK, run the tests,
+for example by selecting ``Test > Run CTests for ElectionGuard SDK``.
+
+The example client can also be built as a standalone project if it is
+configured with the location of the SDK, but this is not covered here.
+
 
 Unix-like Systems
 ~~~~~~~~~~~~~~~~~
 
-From the build directory, run
+To build and run an example client of the SDK, run the tests:
 
 .. code:: sh
 
-   make test
+    cmake --build build --target test
+
+Alternatively you can build the client as a stand-alone project.
+Create a separate build directory for the client, configure the build
+to refer to the built library, and build the client.
+
+.. code:: sh
+
+   mkdir simple_build
+   ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/simple -B simple_build
+   cmake --build simple_build --target simple
+
+The built binary should be located at :file:`simple_build/simple`.
+
 
 Debugging
 ---------
 
 To enable debug builds suitable for running with debuggers like
 :program:`lldb`, set the ``CMAKE_BUILD_TYPE`` cmake variable to
-``Debug``. From the command-line, this looks like
+``Debug`` when configuring. From the command-line, this looks like
 
 .. code:: sh
 
-    cmake -DCMAKE_BUILD_TYPE=Debug ..
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 
 Developing
 ----------
@@ -109,31 +121,15 @@ From the command-line, this looks like
 
 .. code:: sh
 
-   cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..
+   cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 Documentation
 -------------
 
 To build the HTML documentation, you will need to have
 :program:`doxygen` installed, as well as :program:`python` with the
-``sphinx`` and ``breathe`` packages. Then run
-
-.. code:: sh
-
-    make docs
-
-and the documentation will be built in the :file:`html` directory. You
-can browse it locally by opening :file:`html/index.html`, or by
-running a local server
-
-.. code::sh
-
-    # python2
-    (cd html && python -m SimpleHTTPServer)
-
-    # python3
-    python3 -m http.server --directory html
-
+``sphinx`` and ``breathe`` packages. Then configure your build with
+the ``BUILD_DOCUMENTATION`` variable set and rebuild.
 
 .. note::
 
@@ -143,6 +139,24 @@ running a local server
    .. code:: sh
 
        git submodule update --init --recursive
+
+
+.. code:: sh
+
+    cmake -S . -B build -DBUILD_DOCUMENTATION=ON
+    cmake --build build
+
+and the documentation will be built in the :file:`build/docs/html`
+directory. You can browse it locally by opening
+:file:`build/docs/html/index.html`, or by running a local server
+
+.. code::sh
+
+    # python2
+    (cd build/docs/html && python -m SimpleHTTPServer)
+
+    # python3
+    python3 -m http.server --directory build/docs/html
 
 Memory Management/Ownership: Who frees what?
 --------------------------------------------

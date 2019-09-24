@@ -1,8 +1,9 @@
 #include <stdlib.h>
 
+#include <electionguard/voting/tracker.h>
+
 #include "main_params.h"
 #include "main_voting.h"
-#include "voting/tracker.h"
 
 static bool initialize_encrypters(struct joint_public_key joint_key);
 
@@ -151,6 +152,7 @@ bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
         {
             char *tracker_string = display_ballot_tracker(tracker);
             int status = puts(tracker_string);
+            free(tracker_string);
             if (status == EOF)
                 ok = false;
         }

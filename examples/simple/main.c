@@ -6,7 +6,7 @@
 #include <io.h>
 #endif
 
-#include "max_values.h"
+#include <electionguard/max_values.h>
 
 #include "main_decryption.h"
 #include "main_keyceremony.h"
@@ -104,9 +104,10 @@ FILE *fmkstemps(char const *template, const char *mode)
 {
     bool ok = true;
 
+    int result_fd = -1;
     FILE *result = NULL;
 
-    // Duplicate the template. It needs to be mutable for mkstemps.
+    // Duplicate the template. It needs to be mutable for mkstemp.
     char *template_mut = strdup(template);
     if (template_mut == NULL)
         ok = false;
@@ -114,15 +115,15 @@ FILE *fmkstemps(char const *template, const char *mode)
     // Create and open the temporary file
     if (ok)
     {
-        template_mut = mktemp(template_mut);
-        if (template_mut == NULL)
+        result_fd = mkstemp(template_mut);
+        if (-1 == result_fd)
             ok = false;
     }
 
-    // Convert the file descripter to a FILE*
+    // Convert the file descriptor to a FILE*
     if (ok)
     {
-        result = fopen(template_mut, mode);
+        result = fdopen(result_fd, mode);
         if (result == NULL)
             ok = false;
     }

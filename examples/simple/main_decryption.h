@@ -5,9 +5,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "crypto.h"
-#include "max_values.h"
-#include "trustee_state.h"
+#include <electionguard/crypto.h>
+#include <electionguard/max_values.h>
+#include <electionguard/trustee_state.h>
 
 bool decryption(FILE *in, FILE *out, struct trustee_state *trustee_states);
 

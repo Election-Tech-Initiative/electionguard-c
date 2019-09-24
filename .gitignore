@@ -6,3 +6,6 @@ main
 compile_commands.json
 html
 doxygen
+result
+build
+/src/electionguard/random_source.h

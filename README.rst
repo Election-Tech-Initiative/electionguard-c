@@ -14,6 +14,8 @@ This repository is pre-release. We look forward to engaging with the elections,
 security, and software engineering communities to continue to improve it as
 we move towards a full release.
 
+For Documentation on how to use this API, visit `ElectionGuard C Documentation <https://aka.ms/ElectionGuard-Documentation>`_. Docs can also be compiled from this repository, see the "Documentation" section below.
+
 For more details about the API, see the
 :ref:`include`.
 

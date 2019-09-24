@@ -56,7 +56,13 @@ int main()
 
     if (ok)
     {
-        voting_results = fmkstemps("voting_results-XXXXXX", "w+x");
+        //Gcc on windows appears to not support the "x" flag at the time of writing
+        #ifdef _WIN32
+            voting_results = fmkstemps("voting_results-XXXXXX", "w+");
+        #else
+            voting_results = fmkstemps("voting_results-XXXXXX", "w+x");
+        #endif
+
         if (voting_results == NULL)
             ok = false;
     }
@@ -70,7 +76,13 @@ int main()
 
     if (ok)
     {
-        tally = fmkstemps("tally-XXXXXX", "wx");
+        //Gcc on windows appears to not support the "x" flag at the time of writing
+        #ifdef _WIN32
+            tally = fmkstemps("tally-XXXXXX", "w");
+        #else
+            tally = fmkstemps("tally-XXXXXX", "wx");
+        #endif
+
         if (tally == NULL)
             ok = false;
     }

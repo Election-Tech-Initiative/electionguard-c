@@ -124,5 +124,5 @@ add_test(NAME build_simple
 )
 
 include(CheckIncludeFiles)
-check_include_files(bcrypt.h HAVE_BCRYPTGENRANDOM)
+check_include_files("windows.h;bcrypt.h" HAVE_BCRYPTGENRANDOM)
 configure_file(${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h.in ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h)

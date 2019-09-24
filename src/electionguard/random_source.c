@@ -2,12 +2,18 @@
 #include <stdio.h>
 #include "random_source.h"
 
+#ifdef HAVE_BCRYPTGENRANDOM
+    #include <windows.h>
+    #include <ntstatus.h>
+    #include <bcrypt.h>
+#endif
+
 struct RandomSource_s {
 #ifdef HAVE_BCRYPTGENRANDOM
-// These links will be helpful for fixing this error:
-// https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcryptgenrandom
-// https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcryptopenalgorithmprovider
-#error Support for generating random byte sequences on Windows is not yet implemented.
+// For details of Windows crypto api, check the two urls below:
+//   https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcryptgenrandom
+//   https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcryptopenalgorithmprovider
+// For the time being we are using the Windows' default RNG algorithm.
 #else
     FILE *dev_random;
 #endif
@@ -26,7 +32,7 @@ struct RandomSource_new_r RandomSource_new(void) {
 
     if(RANDOM_SOURCE_SUCCESS == result.status) {
 #ifdef HAVE_BCRYPTGENRANDOM
-#error Support for generating random byte sequences on Windows is not yet implemented.
+        //For Windows, we dont need to do anything particular here
 #else
         result.source->dev_random = fopen("/dev/urandom", "r");
         if(NULL == result.source->dev_random) {
@@ -41,7 +47,7 @@ struct RandomSource_new_r RandomSource_new(void) {
 
 void RandomSource_free(RandomSource source) {
 #ifdef HAVE_BCRYPTGENRANDOM
-#error Support for generating random byte sequences on Windows is not yet implemented.
+    free(source);
 #else
     fclose(source->dev_random);
     free(source);
@@ -58,7 +64,10 @@ enum RandomSource_status RandomSource_uniform_o(RandomSource source, uint4096 ou
     do {
         if(RANDOM_SOURCE_SUCCESS == result) {
 #ifdef HAVE_BCRYPTGENRANDOM
-#error Support for generating random byte sequences on Windows is not yet implemented.
+            NTSTATUS ntstatus = BCryptGenRandom(NULL, raw_bytes, UINT4096_SIZE_BYTES, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+            if(ntstatus != STATUS_SUCCESS) {
+                result = RANDOM_SOURCE_IO_ERROR;
+            }
 #else
             item_count = fread(raw_bytes, UINT4096_SIZE_BYTES, 1, source->dev_random);
             if(1 != item_count) {
@@ -98,4 +107,16 @@ struct RandomSource_uniform_r RandomSource_uniform(RandomSource source) {
     }
 
     return result;
+}
+
+//4096 random bits into a mpz_t
+enum RandomSource_status RandomSource_uniform_bignum_o(mpz_t out, RandomSource source){
+    struct RandomSource_uniform_r result = RandomSource_uniform(source);
+
+    if(RANDOM_SOURCE_SUCCESS == result.status){
+        import_uint4096(out, result.result);
+        free(result.result);
+    }
+
+    return result.status;
 }

@@ -9,3 +9,11 @@ doxygen
 result
 build
 /src/electionguard/random_source.h
+.vs/
+.vscode/
+Debug/
+Testing/
+*/a.out
+test_Debug/
+tally-*
+voting_results*

@@ -47,22 +47,35 @@ struct KeyCeremony_Trustee_new_r KeyCeremony_Trustee_new(uint32_t num_trustees,
         result.trustee->num_trustees = num_trustees;
         result.trustee->threshold = threshold;
         result.trustee->index = index;
+
+        Crypto_private_key_init(&result.trustee->private_key, threshold);
+        for(int i=0; i<threshold; i++){
+            Crypto_public_key_new(&result.trustee->public_keys[i], threshold);
+        }
     }
 
     return result;
 }
 
-void KeyCeremony_Trustee_free(KeyCeremony_Trustee t) { free(t); }
+void KeyCeremony_Trustee_free(KeyCeremony_Trustee t) {
+    Crypto_private_key_free(&t->private_key, t->threshold);
+    for(int i=0; i<t->threshold; i++){
+        Crypto_public_key_free(&t->public_keys[i], t->threshold);
+    }
+    free(t);
+}
 
 struct KeyCeremony_Trustee_generate_key_r
-KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t)
+KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t, raw_hash base_hash_code)
 {
     struct KeyCeremony_Trustee_generate_key_r result;
     result.status = KEYCEREMONY_TRUSTEE_SUCCESS;
 
     // Generate the keypair
     struct Crypto_gen_keypair_r crypto_result =
-        Crypto_gen_keypair(t->threshold);
+        Crypto_gen_keypair(t->threshold, base_hash_code);
+    // check that we generated good proofs (right now this call crashes if the proofs fail)
+    Crypto_check_keypair_proof(crypto_result.public_key, base_hash_code);
     switch (crypto_result.status)
     {
     case CRYPTO_INSUFFICIENT_MEMORY:
@@ -80,6 +93,11 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t)
         Crypto_private_key_copy(&t->private_key, &crypto_result.private_key);
         Crypto_public_key_copy(&t->public_keys[t->index],
                                &crypto_result.public_key);
+
+        printf("Trustee %d generated public key:\n", t->index);
+        print_base16(t->public_keys[t->index].coef_commitments[0]);
+        // printf("Trustee %d generated private key:\n", t->index);
+        // print_base16(t->private_key.coefficients[0]);
     }
 
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
@@ -88,6 +106,8 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t)
         struct key_generated_rep message_rep;
 
         message_rep.trustee_index = t->index;
+        message_rep.public_key.threshold = t->threshold;
+        Crypto_public_key_new(&message_rep.public_key,t->threshold);
         Crypto_public_key_copy(&message_rep.public_key,
                                &t->public_keys[t->index]);
 
@@ -103,6 +123,7 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t)
         Serialize_allocate(&state);
         Serialize_write_key_generated(&state, &message_rep);
 
+        Crypto_public_key_free(&message_rep.public_key, t->threshold);
         if (state.status != SERIALIZE_STATE_WRITING)
             result.status = KEYCEREMONY_TRUSTEE_SERIALIZE_ERROR;
         else
@@ -135,6 +156,9 @@ KeyCeremony_Trustee_generate_shares(KeyCeremony_Trustee t,
             .buf = (uint8_t *)in_message.bytes,
         };
 
+        for(int i=0; i<t->num_trustees; i++){
+            Crypto_public_key_new(&in_message_rep.public_keys[i],t->threshold);
+        }
         Serialize_read_all_keys_received(&state, &in_message_rep);
 
         if (state.status != SERIALIZE_STATE_READING)
@@ -149,9 +173,11 @@ KeyCeremony_Trustee_generate_shares(KeyCeremony_Trustee t,
 
     // Copy other public keys into my state
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
-        for (uint32_t i = 0; i < t->num_trustees; i++)
+        for (uint32_t i = 0; i < t->num_trustees; i++){
             Crypto_public_key_copy(&t->public_keys[i],
                                    &in_message_rep.public_keys[i]);
+            Crypto_public_key_free(&in_message_rep.public_keys[i], t->threshold);
+        }
 
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
     {
@@ -160,14 +186,17 @@ KeyCeremony_Trustee_generate_shares(KeyCeremony_Trustee t,
 
         out_message_rep.trustee_index = t->index;
         out_message_rep.num_trustees = t->num_trustees;
-        for (uint32_t i = 0; i < t->num_trustees; i++)
-        {
-            Crypto_private_key_copy(&out_message_rep.shares[i].private_key,
-                                    &t->private_key);
-            Crypto_public_key_copy(
-                &out_message_rep.shares[i].recipient_public_key,
-                &t->public_keys[i]);
-        }
+        //re-add for thresholding
+        //for (uint32_t i = 0; i < t->num_trustees; i++)
+        // {
+        //     Crypto_private_key_init(&out_message_rep.shares[i].private_key, t->threshold);
+        //     Crypto_private_key_copy(&out_message_rep.shares[i].private_key,
+        //                             &t->private_key);
+        //     Crypto_public_key_init(&out_message_rep.shares[i].recipient_public_key, t->threshold);
+        //     Crypto_public_key_copy(
+        //         &out_message_rep.shares[i].recipient_public_key,
+        //         &t->public_keys[i]);
+        // }
 
         // Serialize the message
         struct serialize_state state = {
@@ -191,7 +220,6 @@ KeyCeremony_Trustee_generate_shares(KeyCeremony_Trustee t,
             };
         }
     }
-
     return result;
 }
 
@@ -214,6 +242,11 @@ KeyCeremony_Trustee_verify_shares(KeyCeremony_Trustee t,
             .buf = (uint8_t *)in_message.bytes,
         };
 
+        // for(int i=0; i<t->num_trustees; i++){
+        //     for(int j=0; j<t->num_trustees; j++){
+        //         Crypto_encrypted_key_share_init(&in_message_rep.shares[i][j], t->threshold);
+        //     }
+        // }
         Serialize_read_all_shares_received(&state, &in_message_rep);
 
         if (state.status != SERIALIZE_STATE_READING)
@@ -224,11 +257,12 @@ KeyCeremony_Trustee_verify_shares(KeyCeremony_Trustee t,
     // previously received
     for (uint32_t i = 0; i < t->threshold; i++)
     {
+        /* Disabled since we aren't using shares for now
         struct encrypted_key_share share = in_message_rep.shares[t->index][i];
-
         if (!Crypto_public_key_equal(&share.recipient_public_key,
                                      &t->public_keys[i]))
             result.status = KEYCEREMONY_TRUSTEE_INVALID_KEY_SHARE;
+        */
     }
 
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
@@ -260,6 +294,11 @@ KeyCeremony_Trustee_verify_shares(KeyCeremony_Trustee t,
                 .bytes = state.buf,
             };
         }
+        // for(int i=0; i<t->num_trustees; i++){
+        //     for(int j=0; j<t->num_trustees; j++){
+        //         Crypto_encrypted_key_share_free(&in_message_rep.shares[i][j], t->threshold);
+        //     }
+        // }
     }
 
     return result;
@@ -274,6 +313,7 @@ KeyCeremony_Trustee_export_state(KeyCeremony_Trustee t)
     {
         struct trustee_state_rep rep;
         rep.index = t->index;
+        Crypto_private_key_init(&rep.private_key,t->threshold);
         Crypto_private_key_copy(&rep.private_key, &t->private_key);
 
         // Serialize the message
@@ -297,6 +337,8 @@ KeyCeremony_Trustee_export_state(KeyCeremony_Trustee t)
                 .bytes = state.buf,
             };
         }
+
+        Crypto_private_key_free(&rep.private_key, t->threshold);
     }
 
     return result;

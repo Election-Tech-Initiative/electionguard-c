@@ -34,7 +34,7 @@ bool voting(struct joint_public_key joint_key, FILE *out)
     if (ok)
     {
         for (uint32_t i = 0; i < NUM_ENCRYPTERS && ok; i++)
-            ok = simulate_random_votes(i, 10);
+            ok = simulate_random_votes(i, 2);
     }
 
     if (ok)
@@ -81,7 +81,7 @@ bool initialize_encrypters(struct joint_public_key joint_key)
     {
         id_buf[0] = i;
         struct Voting_Encrypter_new_r result =
-            Voting_Encrypter_new(uid, joint_key, NUM_SELECTIONS);
+            Voting_Encrypter_new(uid, joint_key, NUM_SELECTIONS, BASE_HASH_CODE);
 
         if (result.status != VOTING_ENCRYPTER_SUCCESS)
             ok = false;
@@ -111,8 +111,18 @@ static bool random_bit() { return 1 & rand(); }
 
 static void fill_random_ballot(bool *selections)
 {
-    for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
-        selections[i] = random_bit();
+    bool selected = false;
+    for (uint32_t i = 0; i < NUM_SELECTIONS; i++){
+        if(!selected){
+            selections[i] = random_bit();
+        }
+        else{
+            selections[i]=false;
+        }
+        if(selections[i]){
+            selected=true;
+        }
+    }
 }
 
 bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)

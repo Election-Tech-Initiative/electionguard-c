@@ -52,8 +52,10 @@ void Serialize_reserve_shares_generated(struct serialize_state *state,
 {
     Serialize_reserve_uint32(state, &data->num_trustees);
     Serialize_reserve_uint32(state, &data->trustee_index);
-    for (uint32_t i = 0; i < data->num_trustees; i++)
-        Serialize_reserve_encrypted_key_share(state, &data->shares[i]);
+    //disabled: no thresholding
+    // for (uint32_t i = 0; i < data->num_trustees; i++){
+    //     Serialize_reserve_encrypted_key_share(state, &data->shares[i]);
+    // }
 }
 
 void Serialize_write_shares_generated(struct serialize_state *state,
@@ -61,8 +63,9 @@ void Serialize_write_shares_generated(struct serialize_state *state,
 {
     Serialize_write_uint32(state, &data->num_trustees);
     Serialize_write_uint32(state, &data->trustee_index);
-    for (uint32_t i = 0; i < data->num_trustees; i++)
-        Serialize_write_encrypted_key_share(state, &data->shares[i]);
+    // Not doing thresholding
+    // for (uint32_t i = 0; i < data->num_trustees; i++)
+    //     Serialize_write_encrypted_key_share(state, &data->shares[i]);
 }
 
 void Serialize_read_shares_generated(struct serialize_state *state,
@@ -70,35 +73,36 @@ void Serialize_read_shares_generated(struct serialize_state *state,
 {
     Serialize_read_uint32(state, &data->num_trustees);
     Serialize_read_uint32(state, &data->trustee_index);
-    for (uint32_t i = 0; i < data->num_trustees; i++)
-        Serialize_read_encrypted_key_share(state, &data->shares[i]);
+    // not doing thresholding
+    // for (uint32_t i = 0; i < data->num_trustees; i++)
+    //     Serialize_read_encrypted_key_share(state, &data->shares[i]);
 }
 
 void Serialize_reserve_all_shares_received(
     struct serialize_state *state, struct all_shares_received_rep const *data)
 {
     Serialize_reserve_uint32(state, &data->num_trustees);
-    for (uint32_t i = 0; i < data->num_trustees; i++)
-        for (uint32_t j = 0; j < data->num_trustees; j++)
-            Serialize_reserve_encrypted_key_share(state, &data->shares[i][j]);
+    // for (uint32_t i = 0; i < data->num_trustees; i++)
+    //     for (uint32_t j = 0; j < data->num_trustees; j++)
+    //         Serialize_reserve_encrypted_key_share(state, &data->shares[i][j]);
 }
 
 void Serialize_write_all_shares_received(
     struct serialize_state *state, struct all_shares_received_rep const *data)
 {
     Serialize_write_uint32(state, &data->num_trustees);
-    for (uint32_t i = 0; i < data->num_trustees; i++)
-        for (uint32_t j = 0; j < data->num_trustees; j++)
-            Serialize_write_encrypted_key_share(state, &data->shares[i][j]);
+    // for (uint32_t i = 0; i < data->num_trustees; i++)
+    //     for (uint32_t j = 0; j < data->num_trustees; j++)
+    //         Serialize_write_encrypted_key_share(state, &data->shares[i][j]);
 }
 
 void Serialize_read_all_shares_received(struct serialize_state *state,
                                         struct all_shares_received_rep *data)
 {
     Serialize_read_uint32(state, &data->num_trustees);
-    for (uint32_t i = 0; i < data->num_trustees; i++)
-        for (uint32_t j = 0; j < data->num_trustees; j++)
-            Serialize_read_encrypted_key_share(state, &data->shares[i][j]);
+    // for (uint32_t i = 0; i < data->num_trustees; i++)
+    //     for (uint32_t j = 0; j < data->num_trustees; j++)
+    //         Serialize_read_encrypted_key_share(state, &data->shares[i][j]);
 }
 
 void Serialize_reserve_shares_verified(struct serialize_state *state,

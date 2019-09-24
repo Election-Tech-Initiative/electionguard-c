@@ -32,7 +32,7 @@ struct uid
  * key, but creates and allocates a new copy. */
 struct Voting_Encrypter_new_r
 Voting_Encrypter_new(struct uid uid, struct joint_public_key joint_key,
-                     uint32_t num_selections);
+                     uint32_t num_selections, raw_hash base_hash);
 
 struct Voting_Encrypter_new_r
 {

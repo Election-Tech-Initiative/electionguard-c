@@ -41,6 +41,9 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/keyceremony/message_reps.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/keyceremony/trustee.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/uint4096.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/bignum.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/sha2-openbsd.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/sha2-openbsd.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.c
@@ -62,13 +65,13 @@ add_library(electionguard
 
 # Compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(electionguard PRIVATE -Wall -Wextra -pedantic -pedantic-errors -Wunreachable-code -Wmissing-field-initializers)
+    target_compile_options(electionguard PUBLIC -Werror -Wall -Wextra -pedantic -pedantic-errors -Wunreachable-code -Wmissing-field-initializers -lgmp)
 endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(electionguard PRIVATE -Wgnu-empty-initializer)
+    target_compile_options(electionguard PUBLIC -Werror --fsanitize=address -Wgnu-empty-initializer)
 endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(electionguard PRIVATE -Wenum-compare)
+    target_compile_options(electionguard PUBLIC -Werror -Wenum-compare)
 endif()
 
 # Set the public include directory depending on if the target is being exported
@@ -112,6 +115,7 @@ add_subdirectory(docs)
 file(MAKE_DIRECTORY  "${CMAKE_CURRENT_BINARY_DIR}/simple_build")
 add_test(NAME build_simple
    COMMAND "${CMAKE_COMMAND}"
+      -DCMAKE_BUILD_TYPE=Deubg
       -E env ElectionGuard_DIR=${CMAKE_CURRENT_BINARY_DIR}/ElectionGuard
       "${CMAKE_CTEST_COMMAND}"
         --build-and-test "${PROJECT_SOURCE_DIR}/examples/simple" "${CMAKE_CURRENT_BINARY_DIR}/simple_build"
@@ -120,5 +124,5 @@ add_test(NAME build_simple
 )
 
 include(CheckIncludeFiles)
-check_include_files(bcrypt.h HAVE_BCRYPTGENRANDOM)
+check_include_files("windows.h;bcrypt.h" HAVE_BCRYPTGENRANDOM)
 configure_file(${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h.in ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h)

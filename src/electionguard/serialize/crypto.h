@@ -8,9 +8,17 @@
 
 void Serialize_reserve_uint4096(struct serialize_state *state, const_uint4096 data);
 
-void Serialize_write_uint4096(struct serialize_state *state, const_uint4096 data);
+void Serialize_write_uint4096(struct serialize_state *state, const mpz_t data);
 
-void Serialize_read_uint4096(struct serialize_state *state, uint4096 data);
+void Serialize_read_uint4096(struct serialize_state *state, mpz_t data);
+
+void Serialize_reserve_hash(struct serialize_state *state);
+void Serialize_write_hash(struct serialize_state *state, struct hash data);
+
+uint8_t* Serialize_reserve_write_hash(struct hash in);
+
+uint8_t *Serialize_reserve_write_bignum(mpz_t in);
+
 
 void Serialize_reserve_private_key(struct serialize_state *state,
                                    struct private_key const *data);
@@ -29,6 +37,16 @@ void Serialize_write_public_key(struct serialize_state *state,
 
 void Serialize_read_public_key(struct serialize_state *state,
                                struct public_key *data);
+
+void Serialize_reserve_schnorr_proof(struct serialize_state *state,
+                                     struct schnorr_proof const *data);
+
+void Serialize_write_schnorr_proof(struct serialize_state *state,
+                                   struct schnorr_proof const *data);
+
+void Serialize_read_schnorr_proof(struct serialize_state *state,
+                                   struct schnorr_proof *data);
+
 
 void Serialize_reserve_encrypted_key_share(
     struct serialize_state *state, struct encrypted_key_share const *data);

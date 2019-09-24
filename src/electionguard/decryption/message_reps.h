@@ -12,6 +12,7 @@ struct decryption_share_rep
     uint32_t trustee_index;
     uint64_t num_tallies;
     struct encryption_rep tally_share[MAX_SELECTIONS];
+    struct cp_proof_rep cp_proofs[MAX_SELECTIONS];
 };
 
 struct decryption_fragments_request_rep

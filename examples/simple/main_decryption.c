@@ -113,7 +113,7 @@ bool initialize_trustees(struct trustee_state *trustee_states)
     for (uint32_t i = 0; i < NUM_TRUSTEES && ok; i++)
     {
         struct Decryption_Trustee_new_r result = Decryption_Trustee_new(
-            NUM_TRUSTEES, THRESHOLD, NUM_SELECTIONS, trustee_states[i]);
+            NUM_TRUSTEES, THRESHOLD, NUM_SELECTIONS, trustee_states[i], BASE_HASH_CODE);
 
         if (result.status != DECRYPTION_TRUSTEE_SUCCESS)
             ok = false;

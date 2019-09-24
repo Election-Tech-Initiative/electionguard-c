@@ -2,13 +2,17 @@ ElectionGuard SDK No-Cryptography Implementation
 =====================================
 
 This implementation of the ElectionGuard SDK serves to showcase the API
-provided by the SDK. It focuses on specifying and fixing the API.
-Although it currently doesn't have encryption, programming against the
+provided by the SDK. It focuses on specifying and fixing the API so
+programming against the
 header files presented in the include document should allow you to
-develop a voting system that is automatically improved with encryption
+develop a voting system that is automatically improved
 as the develoment of the ElectionGuard SDK continues.
 
-For more details about that API, see the
+This repository is pre-release. We look forward to engaging with the elections,
+security, and software engineering communities to continue to improve it as
+we move towards a full release.
+
+For more details about the API, see the
 :ref:`include`.
 
 .. _building:
@@ -16,18 +20,11 @@ For more details about that API, see the
 Building
 --------
 
-To enable cross-platform building, we use `cmake
-<https://cmake.org/>`_. Any generator should work, but we describe
-here how build using `Visual Studio
-<https://visualstudio.microsoft.com/>`_ and using a Unix-like shell.
 
-Visual Studio
+Windows
 ~~~~~~~~~~~~~
 
-As long as you have the C++ CMake tools for Windows installed,
-:program:`cmake` should automatically integrate with Visual Studio.
-This means you can build the project from the IDE, for example by
-selecting ``Build > Build All`` in the menu.
+A file describing the build process for Windows can be found `here <README-windows.md>`_.
 
 Unix-like Systems
 ~~~~~~~~~~~~~~~~~
@@ -54,8 +51,8 @@ also execute the client directly to better examine the output it produces.
 
 .. warning::
 
-  The current implementation allocates most things statically, leading
-  to a large stack. This can cause stack-overflows.
+  The current implementation allocates many things statically, leading
+  to a large stack. This can cause stack-overflows as the size of elections grows.
 
   The size of the stack mostly depends on the value of :data:`MAX_TRUSTEES` in
   :file:`include/max_trustees.h`, so one way to fix the problem is to reduce
@@ -67,15 +64,10 @@ also execute the client directly to better examine the output it produces.
   are usually pretty helpful, and setting ``--main-stacksize`` and
   ``--main-stackframe`` according to its reccomendations usually fixes the issue.
 
-Visual Studio
+Windows
 ~~~~~~~~~~~~~
 
-To build and execute an example client of the SDK, run the tests,
-for example by selecting ``Test > Run CTests for ElectionGuard SDK``.
-
-The example client can also be built as a standalone project if it is
-configured with the location of the SDK, but this is not covered here.
-
+A file describing the build process for Windows can be found `here <README-windows.md>`_.
 
 Unix-like Systems
 ~~~~~~~~~~~~~~~~~
@@ -255,3 +247,15 @@ fact, we might rely on the details of its representation.
      int year;
      enum color color;
    };
+
+Current Limitations
+--------------------
+
+- Elections configurations are hard-coded. Later versions will be dynamically configurable by JSON input.
+- Proof checks are sanity checks only, they are suitable to double check output from a trustworthy source, but not for a verifier.
+- Election output is not yet structured for JSON output. Future versions will output data that will be compatible with our verifier specifications.
+- We have not yet implemented thresholded decryption, elctions can run with multiple trustees, but all trustees must be present to decrypt.
+- Our build is not currently compatible with Visual Studio
+- The code is tested to be memory safe, however there are known meory leaks, these will be fixed in the next versions
+- Decryption works by loading the entire elction into memory. Due to the size of elctions, this will not be desirable for larger elctions.
+- We use a dummy hash for the base hash, when JSON input is enabled, that must feed into the base hash

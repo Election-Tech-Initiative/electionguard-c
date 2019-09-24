@@ -19,11 +19,13 @@ struct Decryption_Trustee_s
     struct encryption_rep tallies[MAX_SELECTIONS];
     //@secret the private key must not be leaked from the system
     struct private_key private_key;
+    struct hash base_hash;
 };
 
 struct Decryption_Trustee_new_r
 Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
-                       uint32_t num_selections, struct trustee_state message)
+                       uint32_t num_selections, struct trustee_state message,
+                       raw_hash base_hash)
 {
     struct Decryption_Trustee_new_r result;
     result.status = DECRYPTION_TRUSTEE_SUCCESS;
@@ -34,6 +36,7 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
 
     struct trustee_state_rep state_rep;
 
+    Crypto_private_key_init(&state_rep.private_key, threshold);
     // Deserialize the input
     {
         struct serialize_state state = {
@@ -57,6 +60,12 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
             result.status = DECRYPTION_TRUSTEE_INSUFFICIENT_MEMORY;
     }
 
+    if (result.status == DECRYPTION_TRUSTEE_SUCCESS)
+    {
+        mpz_init(result.decryptor->base_hash.digest);
+        Crypto_hash_reduce(&result.decryptor->base_hash, base_hash);
+    }
+
     // Initialize the trustee
     if (result.status == DECRYPTION_TRUSTEE_SUCCESS)
     {
@@ -64,9 +73,12 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
         result.decryptor->threshold = threshold;
         result.decryptor->num_selections = num_selections;
         result.decryptor->index = state_rep.index;
-        for(size_t i = 0; i < MAX_SELECTIONS; i++) {
+        for (size_t i = 0; i < MAX_SELECTIONS; i++)
+        {
+            Crypto_encryption_rep_new(&result.decryptor->tallies[i]);
             Crypto_encryption_homomorphic_zero(&result.decryptor->tallies[i]);
         }
+        Crypto_private_key_init(&result.decryptor->private_key, threshold);
         Crypto_private_key_copy(&result.decryptor->private_key,
                                 &state_rep.private_key);
     }
@@ -74,11 +86,22 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
     return result;
 }
 
-void Decryption_Trustee_free(Decryption_Trustee d) { free(d); }
+void Decryption_Trustee_free(Decryption_Trustee d)
+{
+    for (size_t i = 0; i < MAX_SELECTIONS; i++)
+    {
+        Crypto_encryption_rep_free(&d->tallies[i]);
+    }
+    Crypto_private_key_free(&d->private_key, d->threshold);
+    mpz_clear(d->base_hash.digest);
+
+    free(d);
+}
 
 static enum Decryption_Trustee_status
 Decryption_Trustee_read_ballot(FILE *in, uint64_t *ballot_id, bool *cast,
-                               uint32_t num_selections, struct encryption_rep *selections)
+                               uint32_t num_selections,
+                               struct encryption_rep *selections)
 {
     enum Decryption_Trustee_status status = DECRYPTION_TRUSTEE_SUCCESS;
 
@@ -98,24 +121,30 @@ Decryption_Trustee_read_ballot(FILE *in, uint64_t *ballot_id, bool *cast,
         if (0 != num_read) // can this actually happen????
             status = DECRYPTION_TRUSTEE_IO_ERROR;
 
-        if(DECRYPTION_TRUSTEE_SUCCESS == status) {
-            if(!uint4096_fscan(in, &selections[i].nonce_encoding))
+        if (DECRYPTION_TRUSTEE_SUCCESS == status)
+        {
+            if (!mpz_t_fscan(in, selections[i].nonce_encoding))
                 status = DECRYPTION_TRUSTEE_IO_ERROR;
         }
 
-        if(DECRYPTION_TRUSTEE_SUCCESS == status) {
+        if (DECRYPTION_TRUSTEE_SUCCESS == status)
+        {
             num_read = fscanf(in, ",");
-            if(0 != num_read) status = DECRYPTION_TRUSTEE_IO_ERROR;
-        }
-
-        if(DECRYPTION_TRUSTEE_SUCCESS == status) {
-            if(!uint4096_fscan(in, &selections[i].message_encoding))
+            if (0 != num_read)
                 status = DECRYPTION_TRUSTEE_IO_ERROR;
         }
 
-        if(DECRYPTION_TRUSTEE_SUCCESS == status) {
+        if (DECRYPTION_TRUSTEE_SUCCESS == status)
+        {
+            if (!mpz_t_fscan(in, selections[i].message_encoding))
+                status = DECRYPTION_TRUSTEE_IO_ERROR;
+        }
+
+        if (DECRYPTION_TRUSTEE_SUCCESS == status)
+        {
             num_read = fscanf(in, ")");
-            if(0 != num_read) status = DECRYPTION_TRUSTEE_IO_ERROR;
+            if (0 != num_read)
+                status = DECRYPTION_TRUSTEE_IO_ERROR;
         }
     }
 
@@ -126,7 +155,8 @@ static void Decryption_Trustee_accum_tally(Decryption_Trustee d,
                                            struct encryption_rep *selections)
 {
     for (size_t i = 0; i < d->num_selections; i++)
-        Crypto_encryption_homomorphic_add(&d->tallies[i], &d->tallies[i], &selections[i]);
+        Crypto_encryption_homomorphic_add(&d->tallies[i], &d->tallies[i],
+                                          &selections[i]);
 }
 
 enum Decryption_Trustee_status
@@ -157,6 +187,11 @@ Decryption_Trustee_tally_voting_record(Decryption_Trustee d, FILE *in)
         bool cast;
         struct encryption_rep selections[MAX_SELECTIONS];
 
+        for (int j = 0; j < MAX_SELECTIONS; j++)
+        {
+            Crypto_encryption_rep_new(&selections[j]);
+        }
+
         status = Decryption_Trustee_read_ballot(in, &ballot_id, &cast,
                                                 d->num_selections, selections);
 
@@ -178,10 +213,35 @@ Decryption_Trustee_compute_share(Decryption_Trustee d)
         struct decryption_share_rep share_rep;
         share_rep.trustee_index = d->index;
         share_rep.num_tallies = d->num_selections;
-        for(size_t i = 0; i < d->num_selections; i++) {
-            uint4096_powmod_o(&share_rep.tally_share[i].nonce_encoding, &d->tallies[i].nonce_encoding, &d->private_key.coefficients[0], Modulus4096_modulus_default);
-            uint4096_copy_o(&share_rep.tally_share[i].message_encoding, &d->tallies[i].message_encoding);
+        for (size_t i = 0; i < d->num_selections; i++)
+        {
+            Crypto_encryption_rep_new(&share_rep.tally_share[i]);
+            pow_mod_p(share_rep.tally_share[i].nonce_encoding,
+                      d->tallies[i].nonce_encoding,
+                      d->private_key.coefficients[0]);
+            mpz_set(share_rep.tally_share[i].message_encoding,
+                    d->tallies[i].message_encoding);
+
+            //Generate the proof
+            Crypto_cp_proof_new(&share_rep.cp_proofs[i]);
+            Crypto_generate_decryption_cp_proof(
+                &share_rep.cp_proofs[i], d->private_key.coefficients[0],
+                share_rep.tally_share[i].nonce_encoding, d->tallies[i],
+                d->base_hash);
+            //Reconstruct the public key to sanity check the proof
+            mpz_t public_key;
+            mpz_init(public_key);
+            pow_mod_p(public_key, generator, d->private_key.coefficients[0]);
+            Crypto_check_decryption_cp_proof(
+                share_rep.cp_proofs[i], public_key,
+                share_rep.tally_share[i].nonce_encoding, d->tallies[i],
+                d->base_hash);
+            mpz_clear(public_key);
         }
+
+        //printf("Trustee %d sending 0th\n", d->index);
+        // print_base16(share_rep.tally_share[0].nonce_encoding);
+        // print_base16(share_rep.tally_share[0].message_encoding);
 
         // Serialize the message
         struct serialize_state state = {
@@ -203,6 +263,11 @@ Decryption_Trustee_compute_share(Decryption_Trustee d)
                 .len = state.len,
                 .bytes = state.buf,
             };
+        }
+
+        for (size_t i = 0; i < d->num_selections; i++)
+        {
+            Crypto_encryption_rep_free(&share_rep.tally_share[i]);
         }
     }
 

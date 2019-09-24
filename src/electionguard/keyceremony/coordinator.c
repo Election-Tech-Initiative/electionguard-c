@@ -82,12 +82,26 @@ KeyCeremony_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
         result.coordinator->threshold = threshold;
 
         KeyCeremony_Coordinator_clear_seen(result.coordinator);
-    }
 
+        for(int i=0; i<num_trustees; i++){
+            Crypto_public_key_new(&result.coordinator->public_keys[i], threshold);
+            for(int j=0; j < num_trustees; j++){
+                Crypto_encrypted_key_share_init(&result.coordinator->shares[i][j], threshold);
+            }
+        }
+    }
     return result;
 }
 
-void KeyCeremony_Coordinator_free(KeyCeremony_Coordinator c) { free(c); }
+void KeyCeremony_Coordinator_free(KeyCeremony_Coordinator c) {
+    for(int i=0; i<c->threshold; i++){
+        Crypto_public_key_free(&c->public_keys[i],c->threshold);
+        for(int j=0; j < c->num_trustees; j++){
+            Crypto_encrypted_key_share_free(&c->shares[i][j], c->threshold);
+        }
+    }
+    free(c);
+}
 
 enum KeyCeremony_Coordinator_status
 KeyCeremony_Coordinator_receive_key_generated(
@@ -106,6 +120,8 @@ KeyCeremony_Coordinator_receive_key_generated(
             .buf = (uint8_t *)message.bytes,
         };
 
+        message_rep.public_key.threshold = c->threshold;
+        Crypto_public_key_new(&message_rep.public_key, c->threshold);
         Serialize_read_key_generated(&state, &message_rep);
 
         if (state.status != SERIALIZE_STATE_READING)
@@ -117,12 +133,21 @@ KeyCeremony_Coordinator_receive_key_generated(
         status = KeyCeremony_Coordinator_assert_index_unseen(
             c, message_rep.trustee_index);
 
+    // Check the schnorr proof
+    if (status == KEYCEREMONY_COORDINATOR_SUCCESS){
+        //We'll need to pass the base hash once that function checks
+        //the hash
+        Crypto_check_keypair_proof(message_rep.public_key, NULL);
+    }
+
+
     // Mark message->trustee_index as seen and store the public key
     if (status == KEYCEREMONY_COORDINATOR_SUCCESS)
     {
         c->seen[message_rep.trustee_index] = true;
         Crypto_public_key_copy(&c->public_keys[message_rep.trustee_index],
                                &message_rep.public_key);
+        Crypto_public_key_free(&message_rep.public_key,c->threshold); //TODO paradigm for freeing on failure
     }
 
     return status;
@@ -147,9 +172,12 @@ KeyCeremony_Coordinator_all_keys_received(KeyCeremony_Coordinator c)
         struct all_keys_received_rep message_rep;
 
         message_rep.num_trustees = c->num_trustees;
-        for (uint32_t i = 0; i < c->num_trustees; i++)
+        for (uint32_t i = 0; i < c->num_trustees; i++){
+            message_rep.public_keys[i].threshold = c->threshold;
+            Crypto_public_key_new(&message_rep.public_keys[i],c->threshold);
             Crypto_public_key_copy(&message_rep.public_keys[i],
                                    &c->public_keys[i]);
+        }
 
         // Serialize the message
         struct serialize_state state = {
@@ -172,6 +200,9 @@ KeyCeremony_Coordinator_all_keys_received(KeyCeremony_Coordinator c)
                 .bytes = state.buf,
             };
         }
+         for (uint32_t i = 0; i < c->num_trustees; i++){
+            Crypto_public_key_free(&message_rep.public_keys[i], c->threshold);
+         }
     }
 
     return result;
@@ -209,10 +240,11 @@ KeyCeremony_Coordinator_receive_shares_generated(
     {
         c->seen[message_rep.trustee_index] = true;
 
-        for (uint32_t i = 0; i < c->num_trustees; i++)
-            Crypto_encrypted_key_share_copy(
-                &c->shares[message_rep.trustee_index][i],
-                &message_rep.shares[i]);
+        // Not doing thresholding
+        // for (uint32_t i = 0; i < c->num_trustees; i++)
+        //     Crypto_encrypted_key_share_copy(
+        //         &c->shares[message_rep.trustee_index][i],
+        //         &message_rep.shares[i]);
     }
 
     return status;
@@ -237,10 +269,13 @@ KeyCeremony_Coordinator_all_shares_received(KeyCeremony_Coordinator c)
         struct all_shares_received_rep message_rep;
 
         message_rep.num_trustees = c->num_trustees;
-        for (uint32_t i = 0; i < c->num_trustees; i++)
-            for (uint32_t j = 0; j < c->num_trustees; j++)
+        /*for (uint32_t i = 0; i < c->num_trustees; i++){
+            for (uint32_t j = 0; j < c->num_trustees; j++){
+                Crypto_encrypted_key_share_init(&message_rep.shares[i][j], c->threshold);
                 Crypto_encrypted_key_share_copy(&message_rep.shares[i][j],
                                                 &c->shares[i][j]);
+            }
+        }*/
 
         // Serialize the message
         struct serialize_state state = {
@@ -264,7 +299,7 @@ KeyCeremony_Coordinator_all_shares_received(KeyCeremony_Coordinator c)
             };
         }
     }
-
+    //TODO Free message rep
     return result;
 }
 
@@ -321,7 +356,7 @@ KeyCeremony_Coordinator_publish_joint_key(KeyCeremony_Coordinator c)
     {
         // Build the message
         struct joint_public_key_rep joint_key;
-
+        Crypto_joint_public_key_init(&joint_key);
         Crypto_generate_joint_public_key(&joint_key, c->public_keys,
                                          c->num_trustees);
 
@@ -346,6 +381,8 @@ KeyCeremony_Coordinator_publish_joint_key(KeyCeremony_Coordinator c)
                 .bytes = state.buf,
             };
         }
+
+        Crypto_joint_public_key_free(&joint_key);
     }
 
     return result;

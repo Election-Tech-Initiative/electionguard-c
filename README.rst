@@ -3,7 +3,11 @@ ElectionGuard SDK C Implementation
 
 This is the core SDK that performs election functions such as vote encryption, decryption, key generation, and tallying. This code is meant to be run on voting system hardware and to be integrated into existing (or new) voting system software. The ElectionGuard SDK is written in C and is meant to add end-to-end verifiability and encryption into 3rd party comprehensive voting systems. There is also a simplistic, proof-of-concept C application to understand how the API should be called. 
 
-For more details about that API, see the
+For Documentation on how to use this API, visit `ElectionGuard C Documentation <https://aka.ms/ElectionGuard-Documentation>`_
+
+Docs can also be compiled from this repository, see the "Documentation" section below.
+
+For more details about the API, see the
 :ref:`include`.
 
 .. _building:

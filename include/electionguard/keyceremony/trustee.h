@@ -45,7 +45,7 @@ void KeyCeremony_Trustee_free(KeyCeremony_Trustee t);
  * Generate a key pair and return the key_generated_message to be
  * passed to the coordinator. */
 struct KeyCeremony_Trustee_generate_key_r
-KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t);
+KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t, raw_hash base_hash_code);
 
 struct KeyCeremony_Trustee_generate_key_r
 {

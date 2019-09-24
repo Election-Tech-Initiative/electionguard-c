@@ -6,6 +6,7 @@
 
 #include <electionguard/decryption/messages.h>
 #include <electionguard/trustee_state.h>
+#include <electionguard/crypto.h>
 
 typedef struct Decryption_Trustee_s *Decryption_Trustee;
 
@@ -33,7 +34,9 @@ enum Decryption_Trustee_status
 /** Create a new trustee. Does not free the trustee state. */
 struct Decryption_Trustee_new_r
 Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
-                       uint32_t num_selections, struct trustee_state state);
+                       uint32_t num_selections, struct trustee_state message,
+                       raw_hash base_hash);
+
 
 struct Decryption_Trustee_new_r
 {

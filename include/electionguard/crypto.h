@@ -2,6 +2,7 @@
 #define __CRYPTO_H__
 
 #include <stddef.h>
+#include <gmp.h>
 
 #include <electionguard/max_values.h>
 
@@ -32,5 +33,25 @@ struct joint_public_key
     uint64_t len;
     uint8_t const *bytes;
 };
+
+enum HASH_DIGEST_SIZE_BYTES_e
+{
+    HASH_DIGEST_SIZE_BYTES = 32,
+};
+
+/* This typedef and struct are used to differentiate between raw hashes and
+ * hashes reduced mod the generator. We use uint8_t[]'s for raw hashes, and
+ * struct hash's for things reduced mod the generator. */
+typedef uint8_t raw_hash[HASH_DIGEST_SIZE_BYTES];
+struct hash {
+    mpz_t digest;
+};
+
+/** You must call this before any of the other SDK functions. */
+void Crypto_parameters_new();
+
+/** After calling this, you should not call any other SDK functions (until you
+ * re-initialize the parameters, at least). */
+void Crypto_parameters_free();
 
 #endif /* __CRYPTO__H__ */

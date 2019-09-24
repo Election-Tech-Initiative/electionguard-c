@@ -21,13 +21,14 @@ struct shares_generated_rep
 {
     uint32_t trustee_index;
     uint32_t num_trustees;
-    struct encrypted_key_share shares[MAX_TRUSTEES];
+    //struct encrypted_key_share shares[MAX_TRUSTEES]; TODO this needs to
+    //be back for thresholding
 };
 
 struct all_shares_received_rep
 {
     uint32_t num_trustees;
-    struct encrypted_key_share shares[MAX_TRUSTEES][MAX_TRUSTEES];
+    //struct encrypted_key_share shares[MAX_TRUSTEES][MAX_TRUSTEES];
 };
 
 struct shares_verified_rep

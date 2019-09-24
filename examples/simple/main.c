@@ -17,10 +17,21 @@
 static FILE *fmkstemps(char const *template, const char *mode);
 
 // Election Parameters
-uint32_t const NUM_TRUSTEES = 5;
-uint32_t const THRESHOLD = 4;
+uint32_t const NUM_TRUSTEES = 2;
+uint32_t const THRESHOLD = 2;
 uint32_t const NUM_ENCRYPTERS = 3;
 uint32_t const NUM_SELECTIONS = 3;
+
+// This is a temporary placeholder. In a real election, this should be
+// initialized by hashing:
+// 1. p (from bignum.h)
+// 2. The subgroup order (not yet named in the current implementation)
+// 3. generator (from bignum.h)
+// 4. NUM_TRUSTEES
+// 5. THRESHOLD
+// 6. The date of the election
+// 7. Jurisdictional information for the election
+raw_hash BASE_HASH_CODE = {0,0xff,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 int main()
 {
@@ -29,6 +40,7 @@ int main()
     // cryptography does not rely on the built in RNG.
     srand(100);
 
+    Crypto_parameters_new();
     bool ok = true;
 
     // Outputs of the key ceremony
@@ -93,6 +105,8 @@ int main()
         free((void *)joint_key.bytes);
         joint_key.bytes = NULL;
     }
+
+    Crypto_parameters_free();
 
     if (ok)
         return EXIT_SUCCESS;

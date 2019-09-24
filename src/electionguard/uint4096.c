@@ -326,7 +326,7 @@ uint4096 uint4096_copy(const_uint4096 src) {
 //
 // =============================================================================
 
-struct Modulus4096_s p = {
+struct Modulus4096_s p_4 = {
     .modulus = {
         .words = {
             0xFFFFFFFFFFFFFFFF, 0xC90FDAA22168C234, 0xC4C6628B80DC1CD1, 0x29024E088A67CC74,
@@ -384,8 +384,8 @@ struct Modulus4096_s p = {
         }
     }
 };
-Modulus4096 Modulus4096_modulus_default = &p;
-const_uint4096 uint4096_modulus_default = &p.modulus;
+Modulus4096 Modulus4096_modulus_default = &p_4;
+const_uint4096 uint4096_modulus_default = &p_4.modulus;
 
 struct uint4096_s g = {
     .words = {

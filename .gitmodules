@@ -1,3 +1,4 @@
 [submodule "docs/sphinx-typlog-theme"]
 	path = docs/sphinx-typlog-theme
 	url = https://github.com/jbaum98/sphinx-typlog-theme
+

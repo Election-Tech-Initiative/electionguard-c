@@ -1,6 +1,7 @@
 #pragma once
 
 #include "uint4096.h"
+#include "bignum.h"
 
 #cmakedefine HAVE_BCRYPTGENRANDOM
 
@@ -30,3 +31,4 @@ struct RandomSource_uniform_r {
 // inclusive.
 struct RandomSource_uniform_r RandomSource_uniform(RandomSource source);
 enum RandomSource_status RandomSource_uniform_o(RandomSource source, uint4096 out);
+enum RandomSource_status RandomSource_uniform_bignum_o(mpz_t out, RandomSource source);

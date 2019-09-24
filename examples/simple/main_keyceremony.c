@@ -157,7 +157,7 @@ bool generate_keys(void)
 
         {
             struct KeyCeremony_Trustee_generate_key_r result =
-                KeyCeremony_Trustee_generate_key(trustees[i]);
+                KeyCeremony_Trustee_generate_key(trustees[i], BASE_HASH_CODE);
 
             if (result.status != KEYCEREMONY_TRUSTEE_SUCCESS)
                 ok = false;

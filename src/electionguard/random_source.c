@@ -99,3 +99,15 @@ struct RandomSource_uniform_r RandomSource_uniform(RandomSource source) {
 
     return result;
 }
+
+//4096 random bits into a mpz_t
+enum RandomSource_status RandomSource_uniform_bignum_o(mpz_t out, RandomSource source){
+    struct RandomSource_uniform_r result = RandomSource_uniform(source);
+
+    if(RANDOM_SOURCE_SUCCESS == result.status){
+        import_uint4096(out, result.result);
+        free(result.result);
+    }
+
+    return result.status;
+}

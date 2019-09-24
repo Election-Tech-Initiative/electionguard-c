@@ -50,8 +50,11 @@ struct Voting_Coordinator_new_r Voting_Coordinator_new(uint32_t num_selections)
 void Voting_Coordinator_free(Voting_Coordinator ballot_box)
 {
     for(size_t i = 0; i < MAX_BALLOTS; i++)
-        if(ballot_box->registered[i])
-            free(ballot_box->selections[i]);
+        if(ballot_box->registered[i]){
+            for(int j=0; j<ballot_box->num_selections; j++){
+                Crypto_encryption_rep_free(&ballot_box->selections[i][j]);
+            }
+        }
     free(ballot_box);
 }
 

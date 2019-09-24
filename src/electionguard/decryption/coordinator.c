@@ -72,6 +72,11 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator c,
 
     struct decryption_share_rep share_rep;
 
+    for (int i = 0; i < MAX_SELECTIONS; i++)
+    {
+        Crypto_encryption_rep_new(&share_rep.tally_share[i]);
+    }
+
     // Deserialize the input
     {
         struct serialize_state state = {
@@ -96,22 +101,44 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator c,
             status = DECRYPTION_COORDINATOR_DUPLICATE_TRUSTEE_INDEX;
     }
 
-    if (status == DECRYPTION_COORDINATOR_SUCCESS) {
+    if (status == DECRYPTION_COORDINATOR_SUCCESS)
+    {
         c->anounced[share_rep.trustee_index] = true;
-        if(c->tallies_initialized) {
-            if(share_rep.num_tallies != c->num_tallies) {
+        // We check to see if this is the first time through
+        if (c->tallies_initialized)
+        {
+            // If it is, we add in the shares for the new tally
+            if (share_rep.num_tallies != c->num_tallies)
+            {
                 status = DECRYPTION_COORDINATOR_CONFUSED_DECRYPTION_TRUSTEE;
             }
-            for(size_t i = 0; i < share_rep.num_tallies && DECRYPTION_COORDINATOR_SUCCESS == status; i++) {
-                uint4096_multmod_o(&c->tallies[i].nonce_encoding, &c->tallies[i].nonce_encoding, &share_rep.tally_share[i].nonce_encoding, Modulus4096_modulus_default);
-                if(!uint4096_eq(&c->tallies[i].message_encoding, &share_rep.tally_share[i].message_encoding))
+            for (size_t i = 0; i < share_rep.num_tallies &&
+                               DECRYPTION_COORDINATOR_SUCCESS == status;
+                 i++)
+            {
+                mul_mod_p(c->tallies[i].nonce_encoding,
+                          c->tallies[i].nonce_encoding,
+                          share_rep.tally_share[i].nonce_encoding);
+                if (!(0 == mpz_cmp(c->tallies[i].message_encoding,
+                                   share_rep.tally_share[i].message_encoding)))
                     status = DECRYPTION_COORDINATOR_CONFUSED_DECRYPTION_TRUSTEE;
+
+                // printf("Comparing message encodings\n");
+                // print_base16(c->tallies[i].message_encoding);
+                // print_base16(share_rep.tally_share[i].message_encoding);
             }
-        } else {
+        }
+        else
+        {
+            //If this is the first one, we just copy them over
             c->num_tallies = share_rep.num_tallies;
-            for(size_t i = 0; i < share_rep.num_tallies; i++) {
-                uint4096_copy_o(&c->tallies[i].nonce_encoding, &share_rep.tally_share[i].nonce_encoding);
-                uint4096_copy_o(&c->tallies[i].message_encoding, &share_rep.tally_share[i].message_encoding);
+            for (size_t i = 0; i < share_rep.num_tallies; i++)
+            {
+                Crypto_encryption_rep_new(&c->tallies[i]);
+                mpz_set(c->tallies[i].nonce_encoding,
+                        share_rep.tally_share[i].nonce_encoding);
+                mpz_set(c->tallies[i].message_encoding,
+                        share_rep.tally_share[i].message_encoding);
             }
             c->tallies_initialized = true;
         }
@@ -312,21 +339,42 @@ Decryption_Coordinator_all_fragments_received(Decryption_Coordinator c,
     for (uint64_t i = 0;
          i < c->num_tallies && status == DECRYPTION_COORDINATOR_SUCCESS; i++)
     {
-        // TODO: the division and discrete log parts of the decryption
+
+        mpz_t M, decrypted_tally;
+
+        mpz_init(M);
+        mpz_init(decrypted_tally);
+
+        // At this point, the message encoding is the same for all
+        // of the trustees (confirmed, B in the document), and
+        // the nonce encoding has been accumulated by product
+        // as messages have come from trustees. Each trustee
+        // sent their nonce encoding raised to their secret key
+        div_mod_p(M, c->tallies[i].message_encoding, c->tallies[i].nonce_encoding);
+
+        //This M should be equal to g^tally
+        log_generator_mod_p(decrypted_tally, M);
+
+        printf("Tally %lu \n", mpz_get_ui(decrypted_tally));
+
         const char *preamble_format = "tally %" PRIu64 ": ";
         const int expected_len = snprintf(NULL, 0, preamble_format, i);
 
-        if(fprintf(out, preamble_format, i) < expected_len)
+        if (fprintf(out, preamble_format, i) < expected_len)
             status = DECRYPTION_COORDINATOR_IO_ERROR;
 
-        if(DECRYPTION_COORDINATOR_SUCCESS == status) {
-            if(!Crypto_encryption_fprint(out, &c->tallies[i])) {
+        if (DECRYPTION_COORDINATOR_SUCCESS == status)
+        {
+            if (!Crypto_encryption_fprint(out, &c->tallies[i]))
+            {
                 status = DECRYPTION_COORDINATOR_IO_ERROR;
             }
         }
 
-        if(DECRYPTION_COORDINATOR_SUCCESS == status) {
-            if(fprintf(out, "\n") < 1) {
+        if (DECRYPTION_COORDINATOR_SUCCESS == status)
+        {
+            if (fprintf(out, "\n") < 1)
+            {
                 status = DECRYPTION_COORDINATOR_IO_ERROR;
             }
         }

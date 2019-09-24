@@ -128,7 +128,7 @@ Voting_Coordinator_assert_registered(Voting_Coordinator coordinator,
     // Check that the ballot isn't already cast or spoiled
     if (result == VOTING_COORDINATOR_SUCCESS)
         //@ assert ballot_box->ballot_ids[i] == ballot->ballot_id;
-        if (coordinator->cast[*i] || coordinator->cast[*i])
+        if (coordinator->cast[*i] || coordinator->spoiled[*i])
             result = VOTING_COORDINATOR_DUPLICATE_BALLOT;
 
     return result;
@@ -161,7 +161,7 @@ Voting_Coordinator_spoil_ballot(Voting_Coordinator coordinator,
 
     // Mark the ballot as cast
     if (result == VOTING_COORDINATOR_SUCCESS)
-        coordinator->cast[i] = true;
+        coordinator->spoiled[i] = true;
 
     return result;
 }

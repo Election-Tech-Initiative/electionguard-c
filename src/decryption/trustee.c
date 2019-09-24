@@ -147,10 +147,10 @@ Decryption_Trustee_tally_voting_record(Decryption_Trustee d, FILE *in)
     return status;
 }
 
-struct Decryption_Trustee_decrypt_tally_share_r
-Decryption_Trustee_decrypt_tally_share(Decryption_Trustee d)
+struct Decryption_Trustee_compute_share_r
+Decryption_Trustee_compute_share(Decryption_Trustee d)
 {
-    struct Decryption_Trustee_decrypt_tally_share_r result;
+    struct Decryption_Trustee_compute_share_r result;
     result.status = DECRYPTION_TRUSTEE_SUCCESS;
 
     {
@@ -187,14 +187,14 @@ Decryption_Trustee_decrypt_tally_share(Decryption_Trustee d)
     return result;
 }
 
-struct Decryption_Trustee_decrypt_share_fragments_r
-Decryption_Trustee_decrypt_tally_share_fragments(Decryption_Trustee d,
-                                                 struct fragments_request req)
+struct Decryption_Trustee_compute_fragments_r
+Decryption_Trustee_compute_fragments(Decryption_Trustee d,
+                                     struct decryption_fragments_request req)
 {
-    struct Decryption_Trustee_decrypt_share_fragments_r result;
+    struct Decryption_Trustee_compute_fragments_r result;
     result.status = DECRYPTION_TRUSTEE_SUCCESS;
 
-    struct fragments_request_rep req_rep;
+    struct decryption_fragments_request_rep req_rep;
 
     // Deserialize the input
     {
@@ -205,7 +205,7 @@ Decryption_Trustee_decrypt_tally_share_fragments(Decryption_Trustee d,
             .buf = (uint8_t *)req.bytes,
         };
 
-        Serialize_read_fragments_request(&state, &req_rep);
+        Serialize_read_decryption_fragments_request(&state, &req_rep);
 
         if (state.status != SERIALIZE_STATE_READING)
             result.status = DECRYPTION_TRUSTEE_DESERIALIZE_ERROR;
@@ -214,10 +214,10 @@ Decryption_Trustee_decrypt_tally_share_fragments(Decryption_Trustee d,
     if (result.status == DECRYPTION_TRUSTEE_SUCCESS)
     {
         // Build the message
-        struct fragments_rep fragments_rep;
-        fragments_rep.trustee_index = d->index;
-        fragments_rep.num_trustees = req_rep.num_trustees;
-        memcpy(fragments_rep.requested, req_rep.requested,
+        struct decryption_fragments_rep decryption_fragments_rep;
+        decryption_fragments_rep.trustee_index = d->index;
+        decryption_fragments_rep.num_trustees = req_rep.num_trustees;
+        memcpy(decryption_fragments_rep.requested, req_rep.requested,
                req_rep.num_trustees * sizeof(bool));
 
         // Serialize the message
@@ -228,15 +228,16 @@ Decryption_Trustee_decrypt_tally_share_fragments(Decryption_Trustee d,
             .buf = NULL,
         };
 
-        Serialize_reserve_fragments(&state, &fragments_rep);
+        Serialize_reserve_decryption_fragments(&state,
+                                               &decryption_fragments_rep);
         Serialize_allocate(&state);
-        Serialize_write_fragments(&state, &fragments_rep);
+        Serialize_write_decryption_fragments(&state, &decryption_fragments_rep);
 
         if (state.status != SERIALIZE_STATE_WRITING)
             result.status = DECRYPTION_TRUSTEE_SERIALIZE_ERROR;
         else
         {
-            result.fragments = (struct fragments){
+            result.fragments = (struct decryption_fragments){
                 .len = state.len,
                 .bytes = state.buf,
             };

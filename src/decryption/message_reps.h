@@ -13,13 +13,13 @@ struct decryption_share_rep
     uint64_t tallies[MAX_SELECTIONS];
 };
 
-struct fragments_request_rep
+struct decryption_fragments_request_rep
 {
     uint32_t num_trustees;
     bool requested[MAX_TRUSTEES];
 };
 
-struct fragments_rep
+struct decryption_fragments_rep
 {
     uint32_t trustee_index;
     uint32_t num_trustees;

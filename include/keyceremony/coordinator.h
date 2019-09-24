@@ -7,6 +7,10 @@
 #include "crypto.h"
 #include "keyceremony/messages.h"
 
+/**
+ * Responsible for coordinating communication between the trustees
+ * during the key ceremony.
+ */
 typedef struct KeyCeremony_Coordinator_s *KeyCeremony_Coordinator;
 
 // @todo jwaksbaum Document what these means, maybe even add a way to
@@ -24,11 +28,11 @@ enum KeyCeremony_Coordinator_status
     KEYCEREMONY_COORDINATOR_TRUSTEE_INVALIDATION,
     KEYCEREMONY_COORDINATOR_SERIALIZE_ERROR,
     KEYCEREMONY_COORDINATOR_DESERIALIZE_ERROR,
-} KeyCeremony_Coordinator_Status;
+};
 
 /************************** INITIALIZATION & FREEING ***************************/
 
-/* Create a new coordinator. */
+/** Create a new coordinator. */
 struct KeyCeremony_Coordinator_new_r
 KeyCeremony_Coordinator_new(uint32_t num_trustees, uint32_t threshold);
 
@@ -38,7 +42,7 @@ struct KeyCeremony_Coordinator_new_r
     KeyCeremony_Coordinator coordinator;
 };
 
-/* Free a coordinator. */
+/** Free a coordinator. */
 void KeyCeremony_Coordinator_free(KeyCeremony_Coordinator c);
 
 /******************************* KEY_GENERATION ********************************/
@@ -56,16 +60,18 @@ void KeyCeremony_Coordinator_free(KeyCeremony_Coordinator c);
 // - In the case of failure, do we require that the entire process
 //   restart, or do we let them try again from where the left off?
 
-/* Receive a message indicating that a trustee has generated its
-   key-pair, which contains the trustee's public key. Checks the NIZKP
-   of possession of the private key.*/
+/**
+ * Receive a message indicating that a trustee has generated its
+ * key-pair, which contains the trustee's public key. Checks the NIZKP
+ * of possession of the private key.*/
 enum KeyCeremony_Coordinator_status
 KeyCeremony_Coordinator_receive_key_generated(
     KeyCeremony_Coordinator c, struct key_generated_message message);
 
-/* Assert that exactly one key_generated_message from each trustee has
-   been received, and generate an all_keys_generated_message containing
-   all of the public keys. */
+/**
+ * Assert that exactly one key_generated_message from each trustee has
+ * been received, and generate an all_keys_generated_message
+ * containing all of the public keys. */
 struct KeyCeremony_Coordinator_all_keys_received_r
 KeyCeremony_Coordinator_all_keys_received(KeyCeremony_Coordinator c);
 
@@ -77,15 +83,17 @@ struct KeyCeremony_Coordinator_all_keys_received_r
 
 /****************************** SHARE_GENERATION *******************************/
 
-/* Receive a message containing a trustees encrypted shares of its
-   private key. */
+/**
+ * Receive a message containing a trustees encrypted shares of its
+ * private key. */
 enum KeyCeremony_Coordinator_status
 KeyCeremony_Coordinator_receive_shares_generated(
     KeyCeremony_Coordinator c, struct shares_generated_message message);
 
-/* Assert that exactly one shares_generated_message from each trustee
-   has been received, and generate an all_shares_received_message
-   containing all of the encrypted key shares. */
+/**
+ * Assert that exactly one shares_generated_message from each trustee
+ * has been received, and generate an all_shares_received_message
+ * containing all of the encrypted key shares. */
 struct KeyCeremony_Coordinator_all_shares_received_r
 KeyCeremony_Coordinator_all_shares_received(KeyCeremony_Coordinator c);
 
@@ -97,16 +105,18 @@ struct KeyCeremony_Coordinator_all_shares_received_r
 
 /******************************** VERIFICATION *********************************/
 
-/* Receive a message indicating that a trustee has verified that the
-   key shares it has received are consistent with the commitments in
-   the public keys of each trustee. */
+/**
+ * Receive a message indicating that a trustee has verified that the
+ * key shares it has received are consistent with the commitments in
+ * the public keys of each trustee. */
 enum KeyCeremony_Coordinator_status
 KeyCeremony_Coordinator_receive_shares_verified(
     KeyCeremony_Coordinator c, struct shares_verified_message message);
 
-/* Assert that exactly one shares_verified_message from each trustee
-   has been received, and generate the joint public key to be used to
-   encrypt votes in the election. */
+/**
+ * Assert that exactly one shares_verified_message from each trustee
+ * has been received, and generate the joint public key to be used to
+ * encrypt votes in the election. */
 struct KeyCeremony_Coordinator_publish_joint_key_r
 KeyCeremony_Coordinator_publish_joint_key(KeyCeremony_Coordinator c);
 

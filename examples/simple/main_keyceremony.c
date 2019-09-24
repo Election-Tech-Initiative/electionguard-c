@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "main_key_ceremony.h"
+#include "main_keyceremony.h"
 #include "main_params.h"
 
 // Initialize

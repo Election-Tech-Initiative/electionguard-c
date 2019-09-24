@@ -1,25 +1,32 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#ifdef _MSC_VER
+#include <io.h>
+#endif
 
 #include "max_values.h"
 
 #include "main_decryption.h"
-#include "main_key_ceremony.h"
+#include "main_keyceremony.h"
 #include "main_params.h"
 #include "main_voting.h"
 
-static FILE *fmkstemps(char const *template, int suffixlen, const char *mode);
+/** Create a new temporary file from a template. */
+static FILE *fmkstemps(char const *template, const char *mode);
 
-// Parameters
-uint32_t const NUM_TRUSTEES = 10;
-uint32_t const THRESHOLD = 8;
+// Election Parameters
+uint32_t const NUM_TRUSTEES = 5;
+uint32_t const THRESHOLD = 4;
 uint32_t const NUM_ENCRYPTERS = 3;
 uint32_t const NUM_SELECTIONS = 3;
 
 int main()
 {
+    // Seed the RNG that we use to generate arbitrary ballots. This
+    // relies on the fact that the current implementation of the
+    // cryptography does not rely on the built in RNG.
     srand(100);
 
     bool ok = true;
@@ -32,35 +39,26 @@ int main()
     if (ok)
         ok = key_ceremony(&joint_key, trustee_states);
 
-    // Open the voting results files
+    // Open the voting results file
     FILE *voting_results = NULL;
 
     if (ok)
     {
-        voting_results = fmkstemps("voting_results-XXXXXX.txt", 4, "w");
+        voting_results = fmkstemps("voting_results-XXXXXX", "w+x");
         if (voting_results == NULL)
             ok = false;
     }
 
     // Voting
-
     if (ok)
         ok = voting(joint_key, voting_results);
-
-    // Rewind the voting results file to the beginning and set mode to reading
-    if (ok)
-    {
-        voting_results = freopen(NULL, "r", voting_results);
-        if (voting_results == NULL)
-            ok = false;
-    }
 
     // Open the tally file
     FILE *tally = NULL;
 
     if (ok)
     {
-        tally = fmkstemps("tally-XXXXXX.txt", 4, "w");
+        tally = fmkstemps("tally-XXXXXX", "wx");
         if (tally == NULL)
             ok = false;
     }
@@ -70,6 +68,7 @@ int main()
         ok = decryption(voting_results, tally, trustee_states);
 
     // Cleanup
+
     if (voting_results != NULL)
     {
         fclose(voting_results);
@@ -101,37 +100,34 @@ int main()
         return EXIT_FAILURE;
 }
 
-FILE *fmkstemps(char const *template, int suffixlen, const char *mode)
+FILE *fmkstemps(char const *template, const char *mode)
 {
     bool ok = true;
 
     FILE *result = NULL;
 
+    // Duplicate the template. It needs to be mutable for mkstemps.
     char *template_mut = strdup(template);
     if (template_mut == NULL)
         ok = false;
 
-    int fd = -1;
+    // Create and open the temporary file
     if (ok)
     {
-        fd = mkstemps(template_mut, suffixlen);
-        if (fd < 0)
+        template_mut = mktemp(template_mut);
+        if (template_mut == NULL)
             ok = false;
     }
 
+    // Convert the file descripter to a FILE*
     if (ok)
     {
-        result = fdopen(fd, mode);
+        result = fopen(template_mut, mode);
         if (result == NULL)
             ok = false;
     }
 
-    if (!ok && fd >= 0)
-    {
-        close(fd);
-        fd = -1;
-    }
-
+    // Free the duplicated template
     if (template_mut != NULL)
     {
         free(template_mut);

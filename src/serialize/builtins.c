@@ -112,7 +112,7 @@ void Serialize_reserve_uint64(struct serialize_state *state,
 
 void Serialize_write_uint64(struct serialize_state *state, uint64_t const *data)
 {
-    static const size_t num_bytes = sizeof(data) / sizeof(uint8_t);
+    static const size_t num_bytes = sizeof(uint64_t) / sizeof(uint8_t);
 
     if (state->status == SERIALIZE_STATE_WRITING)
     {

@@ -7,21 +7,23 @@
 // constant expressions, allowing us to use them as array sizes, but
 // they are not compiled away, making it easier to debug.
 
-/* The maximum number of total trustees. */
+/** The maximum number of total trustees. */
 enum MAX_TRUSTEES_e
 {
-    MAX_TRUSTEES = 30
+    MAX_TRUSTEES = 5
 };
 
-/* The maximum number of ballots that can be cast by a single ballot
-   box. */
+/**
+ * The maximum number of ballots that can be cast by a voting single
+ * coordinator. */
 enum MAX_BALLOTS_e
 {
     MAX_BALLOTS = 1000
 };
 
-/* The maximum number of selections that can be present for a single
-   election. This is across all races. */
+/**
+ * The maximum number of selections that can be present for a single
+ * contest. */
 enum MAX_SELECTIONS_e
 {
     MAX_SELECTIONS = 1000

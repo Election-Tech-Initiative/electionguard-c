@@ -30,7 +30,7 @@ enum Voting_Coordinator_status
 // formats so that we can validate that the ballots we receive are
 // well-formed?
 
-/* Create a new voting coordinator. */
+/** Create a new voting coordinator. */
 struct Voting_Coordinator_new_r Voting_Coordinator_new(uint32_t num_selections);
 
 struct Voting_Coordinator_new_r
@@ -39,23 +39,24 @@ struct Voting_Coordinator_new_r
     Voting_Coordinator coordinator;
 };
 
-/* Free a ballot box. */
+/** Free a ballot box. */
 void Voting_Coordinator_free(Voting_Coordinator coordinator);
 
 /****************** REGISTERING, CASTING & SPOILING BALLOTS *******************/
 
-/* Register a ballot with the coordinator so that it may be cast or
-   spoiled. */
+/**
+ * Register a ballot with the coordinator so that it may be cast or
+ * spoiled. */
 enum Voting_Coordinator_status
 Voting_Coordinator_register_ballot(Voting_Coordinator coordinator,
                                    struct register_ballot_message message);
 
-/* Mark the ballot specified by ballot_id as cast. */
+/** Mark the ballot specified by ballot_id as cast. */
 enum Voting_Coordinator_status
 Voting_Coordinator_cast_ballot(Voting_Coordinator coordinator,
                                struct ballot_identifier ballot_id);
 
-/* Mark the ballot specified by ballot_id as spoiled. */
+/** Mark the ballot specified by ballot_id as spoiled. */
 enum Voting_Coordinator_status
 Voting_Coordinator_spoil_ballot(Voting_Coordinator coordinator,
                                 struct ballot_identifier ballot_id);
@@ -66,7 +67,7 @@ Voting_Coordinator_spoil_ballot(Voting_Coordinator coordinator,
 
 // @todo jwaksbaum What format is it writing in?
 
-/* Write all of the cast and spoiled ballots to out. */
+/** Write all of the cast and spoiled ballots to out. */
 enum Voting_Coordinator_status
 Voting_Coordinator_export_ballots(Voting_Coordinator coordinator, FILE *out);
 

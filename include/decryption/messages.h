@@ -3,24 +3,26 @@
 
 #include <stdint.h>
 
-/* A trustee's share of decrypting the results of an election. */
+/** A trustee's share of decrypting the results of an election. */
 struct decryption_share
 {
     uint64_t len;
     uint8_t const *bytes;
 };
 
-/* A request from the coordinator to a trustee, asking it to provide
-   fragments to compensate for a missing trustee. */
-struct fragments_request
+/**
+ * A request from the coordinator to a trustee, asking it to provide
+ * fragments to compensate for a missing trustee. */
+struct decryption_fragments_request
 {
     uint64_t len;
     uint8_t const *bytes;
 };
 
-/* A response from a trustee to a coordinator providing fragments to
-   compensate for a missing trustee. */
-struct fragments
+/**
+ * A response from a trustee to a coordinator providing fragments to
+ * compensate for a missing trustee. */
+struct decryption_fragments
 {
     uint64_t len;
     uint8_t const *bytes;

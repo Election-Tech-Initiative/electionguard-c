@@ -5,8 +5,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* The message that is passed from the encrypter to the ballot box to
-   register a ballot. */
+/**
+ * The message that is passed from the encrypter to the ballot box to
+ * register a ballot. */
 struct register_ballot_message
 {
     uint64_t len;
@@ -20,17 +21,19 @@ struct register_ballot_message
 // with identical identifiers, even if we try to make sure that never
 // happens.
 
-/* Used by a voter to confirm that their ballot was included in the
-   final tally. */
+/**
+ * Used by a voter to confirm that their ballot was included in the
+ * final tally. */
 struct ballot_tracker
 {
     uint64_t len;
     uint8_t const *bytes;
 };
 
-/* Uniquely identifies a ballot in a given polling place for the
-   duration of a ballot's liveness, and is scanned by the ballot box
-   to mark a ballot as cast. */
+/**
+ * Uniquely identifies a ballot in a given polling place for the
+ * duration of a ballot's liveness, and is scanned by the ballot box
+ * to mark a ballot as cast. */
 struct ballot_identifier
 {
     uint64_t len;

@@ -16,8 +16,8 @@ static bool tally_voting_records(FILE *in);
 
 static bool decrypt_tally_shares(void);
 
-static bool decrypt_tally_fragments(bool *requests_present,
-                                    struct fragments_request *requests);
+static bool decrypt_tally_decryption_fragments(
+    bool *requests_present, struct decryption_fragments_request *requests);
 
 static Decryption_Trustee trustees[MAX_TRUSTEES];
 static Decryption_Coordinator coordinator;
@@ -38,15 +38,15 @@ bool decryption(FILE *in, FILE *out, struct trustee_state *trustee_states)
     if (ok)
         ok = decrypt_tally_shares();
 
-    struct fragments_request requests[MAX_TRUSTEES];
+    struct decryption_fragments_request requests[MAX_TRUSTEES];
     bool request_present[MAX_TRUSTEES];
     for (uint32_t i = 0; i < NUM_TRUSTEES; i++)
-        requests[i] = (struct fragments_request){.bytes = NULL};
+        requests[i] = (struct decryption_fragments_request){.bytes = NULL};
 
     if (ok)
     {
-        struct Decryption_Coordinator_all_tally_shares_received_r result =
-            Decryption_Coordinator_all_tally_shares_received(coordinator);
+        struct Decryption_Coordinator_all_shares_received_r result =
+            Decryption_Coordinator_all_shares_received(coordinator);
 
         if (result.status != DECRYPTION_COORDINATOR_SUCCESS)
             ok = false;
@@ -57,7 +57,7 @@ bool decryption(FILE *in, FILE *out, struct trustee_state *trustee_states)
     }
 
     if (ok)
-        ok = decrypt_tally_fragments(request_present, requests);
+        ok = decrypt_tally_decryption_fragments(request_present, requests);
 
     if (ok)
     {
@@ -156,8 +156,8 @@ bool decrypt_tally_shares(void)
         struct decryption_share share = {.bytes = NULL};
 
         {
-            struct Decryption_Trustee_decrypt_tally_share_r result =
-                Decryption_Trustee_decrypt_tally_share(trustees[i]);
+            struct Decryption_Trustee_compute_share_r result =
+                Decryption_Trustee_compute_share(trustees[i]);
 
             if (result.status != DECRYPTION_TRUSTEE_SUCCESS)
                 ok = false;
@@ -168,7 +168,7 @@ bool decrypt_tally_shares(void)
         if (ok)
         {
             enum Decryption_Coordinator_status status =
-                Decryption_Coordinator_recieve_tally_share(coordinator, share);
+                Decryption_Coordinator_receive_share(coordinator, share);
             if (status != DECRYPTION_COORDINATOR_SUCCESS)
                 ok = false;
         }
@@ -183,8 +183,8 @@ bool decrypt_tally_shares(void)
     return ok;
 }
 
-bool decrypt_tally_fragments(bool *requests_present,
-                             struct fragments_request *requests)
+bool decrypt_tally_decryption_fragments(
+    bool *requests_present, struct decryption_fragments_request *requests)
 {
     bool ok = true;
 
@@ -192,33 +192,33 @@ bool decrypt_tally_fragments(bool *requests_present,
     {
         if (requests_present[i])
         {
-            struct fragments fragments = {.bytes = NULL};
+            struct decryption_fragments decryption_fragments = {.bytes = NULL};
 
             {
-                struct Decryption_Trustee_decrypt_share_fragments_r result =
-                    Decryption_Trustee_decrypt_tally_share_fragments(
-                        trustees[i], requests[i]);
+                struct Decryption_Trustee_compute_fragments_r result =
+                    Decryption_Trustee_compute_fragments(trustees[i],
+                                                         requests[i]);
 
                 if (result.status != DECRYPTION_TRUSTEE_SUCCESS)
                     ok = false;
                 else
-                    fragments = result.fragments;
+                    decryption_fragments = result.fragments;
             }
 
             if (ok)
             {
                 enum Decryption_Coordinator_status status =
-                    Decryption_Coordinator_receive_tally_fragments(coordinator,
-                                                                   fragments);
+                    Decryption_Coordinator_receive_fragments(
+                        coordinator, decryption_fragments);
 
                 if (status != DECRYPTION_COORDINATOR_SUCCESS)
                     ok = false;
             }
 
-            if (fragments.bytes != NULL)
+            if (decryption_fragments.bytes != NULL)
             {
-                free((void *)fragments.bytes);
-                fragments.bytes = NULL;
+                free((void *)decryption_fragments.bytes);
+                decryption_fragments.bytes = NULL;
             }
         }
     }

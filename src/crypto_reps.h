@@ -5,7 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "crypto.h"
+// @todo jwaksbaum Fix name clashes with MSC
+#include "../include/crypto.h"
 #include "max_values.h"
 
 enum Crypto_status

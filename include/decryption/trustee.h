@@ -30,7 +30,7 @@ enum Decryption_Trustee_status
 // because the same message (ie. from a coordinator) may need to be
 // consumed multiple times.
 
-/* Create a new trustee. Does not free the trustee state. */
+/** Create a new trustee. Does not free the trustee state. */
 struct Decryption_Trustee_new_r
 Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
                        uint32_t num_selections, struct trustee_state state);
@@ -41,22 +41,22 @@ struct Decryption_Trustee_new_r
     Decryption_Trustee decryptor;
 };
 
-/* Free a trustee. */
+/** Free a trustee. */
 void Decryption_Trustee_free(Decryption_Trustee d);
 
 /********************************* TALLYING **********************************/
 
-/* Parse a voting record, tally it, and store the encrypted tally of all the votes. */
+/** Parse a voting record, tally it, and store the encrypted tally of all the votes. */
 enum Decryption_Trustee_status
 Decryption_Trustee_tally_voting_record(Decryption_Trustee d, FILE *in);
 
 /********************************* ANNOUNCING **********************************/
 
-/* Decrypt this trustee's share of the tally. */
-struct Decryption_Trustee_decrypt_tally_share_r
-Decryption_Trustee_decrypt_tally_share(Decryption_Trustee d);
+/** Decrypt this trustee's share of the tally. */
+struct Decryption_Trustee_compute_share_r
+Decryption_Trustee_compute_share(Decryption_Trustee d);
 
-struct Decryption_Trustee_decrypt_tally_share_r
+struct Decryption_Trustee_compute_share_r
 {
     enum Decryption_Trustee_status status;
     struct decryption_share share;
@@ -64,15 +64,15 @@ struct Decryption_Trustee_decrypt_tally_share_r
 
 /******************************* COMPENSATING ********************************/
 
-/* Decrypt this trustee's fragment of another trustee's share of the tally.*/
-struct Decryption_Trustee_decrypt_share_fragments_r
-Decryption_Trustee_decrypt_tally_share_fragments(Decryption_Trustee d,
-                                                 struct fragments_request req);
+/** Decrypt this trustee's fragment of another trustee's share of the tally.*/
+struct Decryption_Trustee_compute_fragments_r
+Decryption_Trustee_compute_fragments(Decryption_Trustee d,
+                                     struct decryption_fragments_request req);
 
-struct Decryption_Trustee_decrypt_share_fragments_r
+struct Decryption_Trustee_compute_fragments_r
 {
     enum Decryption_Trustee_status status;
-    struct fragments fragments;
+    struct decryption_fragments fragments;
 };
 
-#endif
+#endif /* __DECRYPTION_TRUSTEE_H__ */

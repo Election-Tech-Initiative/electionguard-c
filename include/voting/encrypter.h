@@ -24,10 +24,11 @@ struct uid
     uint8_t const *bytes;
 };
 
-/* Create a new encrypter. Does not transfer ownership of the public
-   key, but creates and allocates a new copy. */
+/**
+ * Create a new encrypter. Does not transfer ownership of the public
+ * key, but creates and allocates a new copy. */
 struct Voting_Encrypter_new_r
-Voting_Encrypter_new(struct uid, struct joint_public_key joint_key,
+Voting_Encrypter_new(struct uid uid, struct joint_public_key joint_key,
                      uint32_t num_selections);
 
 struct Voting_Encrypter_new_r
@@ -36,7 +37,7 @@ struct Voting_Encrypter_new_r
     Voting_Encrypter encrypter;
 };
 
-/* Free a ballot marking device. */
+/** Free a ballot marking device. */
 void Voting_Encrypter_free(Voting_Encrypter encrypter);
 
 /***************************** BALLOT ENCRYPTION ******************************/
@@ -49,9 +50,10 @@ void Voting_Encrypter_free(Voting_Encrypter encrypter);
 // responsible for adding information like time, unique ID, etc? Or
 // should the GUI layer provide any of that info?
 
-/* Encrypt an unencrypted ballot, producing an encrypted ballot, a
-   ballot tracker, and a ballot identifier. The caller must free both
-   when done, ie. they own them. */
+/**
+ * Encrypt an unencrypted ballot, producing an encrypted ballot, a
+ * ballot tracker, and a ballot identifier. The caller must free both
+ * when done, ie. they own them. */
 struct Voting_Encrypter_encrypt_ballot_r
 Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
                                 bool const *selections);

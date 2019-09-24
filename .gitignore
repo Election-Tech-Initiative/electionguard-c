@@ -4,3 +4,5 @@
 main
 *.o.json
 compile_commands.json
+html
+doxygen

@@ -22,10 +22,10 @@ struct Decryption_Coordinator_s
     uint64_t num_tallies;
     uint64_t tallies[MAX_SELECTIONS];
 
-    // Which trustees have responded, and with which fragments
+    // Which trustees have responded, and with which decryption_fragments
     bool responded[MAX_TRUSTEES];
-    // How many fragments we have received to compensate for each trustee
-    uint32_t num_fragments[MAX_TRUSTEES];
+    // How many decryption_fragments we have received to compensate for each trustee
+    uint32_t num_decryption_fragments[MAX_TRUSTEES];
 };
 
 struct Decryption_Coordinator_new_r
@@ -64,8 +64,8 @@ Decryption_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
 void Decryption_Coordinator_free(Decryption_Coordinator c) { free(c); }
 
 enum Decryption_Coordinator_status
-Decryption_Coordinator_recieve_tally_share(Decryption_Coordinator c,
-                                           struct decryption_share share)
+Decryption_Coordinator_receive_share(Decryption_Coordinator c,
+                                     struct decryption_share share)
 {
     enum Decryption_Coordinator_status status = DECRYPTION_COORDINATOR_SUCCESS;
 
@@ -131,14 +131,13 @@ Decryption_Coordinator_fill_missing_indices(Decryption_Coordinator c,
         indices[i] = !c->anounced[i];
 }
 
-static bool
-Decryption_Coordinator_fill_requests(Decryption_Coordinator c,
-                                     bool *request_present,
-                                     struct fragments_request *requests)
+static bool Decryption_Coordinator_fill_requests(
+    Decryption_Coordinator c, bool *request_present,
+    struct decryption_fragments_request *requests)
 {
     bool ok = true;
 
-    // The number of trustees from who've we requested the missing trustee fragments
+    // The number of trustees from who've we requested the missing trustee decryption_fragments
     uint32_t num_requested = 0;
 
     for (uint32_t i = 0; i < c->num_trustees && ok; i++)
@@ -148,7 +147,7 @@ Decryption_Coordinator_fill_requests(Decryption_Coordinator c,
         else
         {
             // Build the message
-            struct fragments_request_rep request_rep;
+            struct decryption_fragments_request_rep request_rep;
             request_rep.num_trustees = c->num_trustees;
 
             if (num_requested < c->threshold)
@@ -169,16 +168,17 @@ Decryption_Coordinator_fill_requests(Decryption_Coordinator c,
                 .buf = NULL,
             };
 
-            Serialize_reserve_fragments_request(&state, &request_rep);
+            Serialize_reserve_decryption_fragments_request(&state,
+                                                           &request_rep);
             Serialize_allocate(&state);
-            Serialize_write_fragments_request(&state, &request_rep);
+            Serialize_write_decryption_fragments_request(&state, &request_rep);
 
             if (state.status != SERIALIZE_STATE_WRITING)
                 ok = false;
             else
             {
                 request_present[i] = true;
-                requests[i] = (struct fragments_request){
+                requests[i] = (struct decryption_fragments_request){
                     .len = state.len,
                     .bytes = state.buf,
                 };
@@ -195,10 +195,10 @@ Decryption_Coordinator_fill_requests(Decryption_Coordinator c,
     return ok;
 }
 
-struct Decryption_Coordinator_all_tally_shares_received_r
-Decryption_Coordinator_all_tally_shares_received(Decryption_Coordinator c)
+struct Decryption_Coordinator_all_shares_received_r
+Decryption_Coordinator_all_shares_received(Decryption_Coordinator c)
 {
-    struct Decryption_Coordinator_all_tally_shares_received_r result;
+    struct Decryption_Coordinator_all_shares_received_r result;
     result.status = DECRYPTION_COORDINATOR_SUCCESS;
     result.num_trustees = c->num_trustees;
     // It is important that the entries of request_present are set to
@@ -221,34 +221,34 @@ Decryption_Coordinator_all_tally_shares_received(Decryption_Coordinator c)
             result.status = DECRYPTION_COORDINATOR_INSUFFICIENT_MEMORY;
     }
 
-    // Prepare to receive fragments
+    // Prepare to receive decryption_fragments
     if (result.status == DECRYPTION_COORDINATOR_SUCCESS)
     {
         memset(c->responded, false, c->num_trustees * sizeof(bool));
-        memset(c->num_fragments, false, c->num_trustees * sizeof(uint32_t));
+        memset(c->num_decryption_fragments, false,
+               c->num_trustees * sizeof(uint32_t));
     }
 
     return result;
 }
 
-enum Decryption_Coordinator_status
-Decryption_Coordinator_receive_tally_fragments(Decryption_Coordinator c,
-                                               struct fragments fragments)
+enum Decryption_Coordinator_status Decryption_Coordinator_receive_fragments(
+    Decryption_Coordinator c, struct decryption_fragments decryption_fragments)
 {
     enum Decryption_Coordinator_status status = DECRYPTION_COORDINATOR_SUCCESS;
 
-    struct fragments_rep fragments_rep;
+    struct decryption_fragments_rep decryption_fragments_rep;
 
     // Deserialize the input
     {
         struct serialize_state state = {
             .status = SERIALIZE_STATE_READING,
-            .len = fragments.len,
+            .len = decryption_fragments.len,
             .offset = 0,
-            .buf = (uint8_t *)fragments.bytes,
+            .buf = (uint8_t *)decryption_fragments.bytes,
         };
 
-        Serialize_read_fragments(&state, &fragments_rep);
+        Serialize_read_decryption_fragments(&state, &decryption_fragments_rep);
 
         if (state.status != SERIALIZE_STATE_READING)
             status = DECRYPTION_COORDINATOR_DESERIALIZE_ERROR;
@@ -258,23 +258,23 @@ Decryption_Coordinator_receive_tally_fragments(Decryption_Coordinator c,
     // and has not yet responded
     if (status == DECRYPTION_COORDINATOR_SUCCESS)
     {
-        if (!(fragments_rep.trustee_index < c->num_trustees))
+        if (!(decryption_fragments_rep.trustee_index < c->num_trustees))
             status = DECRYPTION_COORDINATOR_INVALID_TRUSTEE_INDEX;
-        else if (!c->anounced[fragments_rep.trustee_index])
+        else if (!c->anounced[decryption_fragments_rep.trustee_index])
             status = DECRYPTION_COORDINATOR_INVALID_TRUSTEE_INDEX;
-        else if (c->responded[fragments_rep.trustee_index])
+        else if (c->responded[decryption_fragments_rep.trustee_index])
             status = DECRYPTION_COORDINATOR_DUPLICATE_TRUSTEE_INDEX;
     }
 
     // Mark this trustee as having responded and increment the count
-    // of fragments for each of the trustees for whom he is providing
+    // of decryption_fragments for each of the trustees for whom he is providing
     // a fragment
     if (status == DECRYPTION_COORDINATOR_SUCCESS)
     {
-        c->responded[fragments_rep.trustee_index] = true;
+        c->responded[decryption_fragments_rep.trustee_index] = true;
         for (uint32_t i = 0; i < c->num_trustees; i++)
-            if (fragments_rep.requested[i])
-                c->num_fragments[i]++;
+            if (decryption_fragments_rep.requested[i])
+                c->num_decryption_fragments[i]++;
     }
 
     return status;
@@ -288,7 +288,7 @@ static bool Decryption_Coordinator_all_trustees_seen_or_compensated(
         if (c->anounced[i])
             ok = ok && c->responded[i];
         else
-            ok = ok && (c->num_fragments[i] == c->threshold);
+            ok = ok && (c->num_decryption_fragments[i] == c->threshold);
 
     return ok;
 }

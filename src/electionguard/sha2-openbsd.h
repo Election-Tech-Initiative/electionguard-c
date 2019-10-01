@@ -41,11 +41,8 @@
 #include <string.h>
 #include <stdint.h>
 
-<<<<<<< HEAD
-=======
 #include <sys/cdefs.h>
 
->>>>>>> 488b7513dc61eb88fa7d7a306300ef07faca79ff
 #define bzero(s, n) memset((s), 0, (n))
 #define bcopy(s1, s2, n) memcpy((s2), (s1), (n))
 #define NO_MEMSET_S true

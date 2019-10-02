@@ -51,7 +51,7 @@ void Voting_Coordinator_free(Voting_Coordinator ballot_box)
 {
     for(size_t i = 0; i < MAX_BALLOTS; i++)
         if(ballot_box->registered[i]){
-            for(int j=0; j<ballot_box->num_selections; j++){
+            for(uint32_t j=0; j<ballot_box->num_selections; j++){
                 Crypto_encryption_rep_free(&ballot_box->selections[i][j]);
             }
         }

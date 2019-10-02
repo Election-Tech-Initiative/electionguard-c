@@ -12,6 +12,7 @@
 #include "uint4096.h"
 #include <electionguard/crypto.h>
 #include <electionguard/max_values.h>
+#include <electionguard/rsa.h>
 
 enum Crypto_status
 {
@@ -40,7 +41,8 @@ void Crypto_private_key_copy(struct private_key *dst,
 void Crypto_hash_final(struct hash *out, SHA2_CTX *context);
 void Crypto_hash_reduce(struct hash *out, raw_hash bytes);
 
-void Crypto_hash_update_bignum(SHA2_CTX *context, mpz_t num);
+void Crypto_hash_update_bignum_p(SHA2_CTX *context, mpz_t num);
+void Crypto_hash_update_bignum_q(SHA2_CTX *context, mpz_t num);
 
 /* A NIZKP of knowledge of the secrets associated with a public key */
 struct schnorr_proof
@@ -88,20 +90,34 @@ struct Crypto_gen_keypair_r
     struct public_key public_key;
 };
 
-struct encrypted_key_share
+struct individualPrivateKeyShare
 {
-    // @todo jwaksbaum In the real implementation, the private key will
-    // not be stored here, rather a share of it it will be encrypted
-    // using the recipient_public_key.
-    // @secret The private key must not be leaked from the system.
-    struct private_key private_key;
-    struct public_key recipient_public_key;
+    mpz_t share;
 };
 
-void Crypto_encrypted_key_share_init(struct encrypted_key_share *dst,
-                                     int threshold);
-void Crypto_encrypted_key_share_free(struct encrypted_key_share *dst,
-                                     int threshold);
+struct individualPublicKeyShare
+{
+    struct public_key recipient_public_key;
+    rsa_public_key rsa_key;
+};
+
+struct encrypted_key_share
+{
+    mpz_t encrypted;
+};
+bool Crypto_check_validity_share_against_public_keys(struct encrypted_key_share* share,
+                                                     struct public_key *pubKeys,
+                                                     rsa_private_key* rsaPrivateKey,
+                                                     uint32_t num_trusties, uint32_t my_index);
+
+void Crypto_create_encrypted_key_share(struct encrypted_key_share *dest,
+                                       struct public_key *pub_key,
+                                       rsa_public_key *rsa_pub_key,
+                                       struct private_key *priv_key,
+                                       uint32_t index);
+
+void Crypto_encrypted_key_share_init(struct encrypted_key_share *dst);
+void Crypto_encrypted_key_share_free(struct encrypted_key_share *dst);
 
 void Crypto_encrypted_key_share_copy(struct encrypted_key_share *dst,
                                      struct encrypted_key_share const *src);
@@ -163,7 +179,7 @@ struct dis_proof_rep
 void Crypto_dis_proof_new(struct dis_proof_rep *dst);
 void Crypto_dis_proof_free(struct dis_proof_rep *dst);
 
-_Bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
+bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
                                       struct encryption_rep encryption,
                                       struct hash base_hash, mpz_t public_key);
 
@@ -174,16 +190,15 @@ void Crypto_generate_aggregate_cp_proof(struct cp_proof_rep *result,
                                         mpz_t public_key);
 
 void Crypto_generate_decryption_cp_proof(
-    struct cp_proof_rep *result, mpz_t secret_key,
-    mpz_t partial_decryption, struct encryption_rep aggregate_encryption,
-    struct hash base_hash);
+    struct cp_proof_rep *result, mpz_t secret_key, mpz_t partial_decryption,
+    struct encryption_rep aggregate_encryption, struct hash base_hash);
 
 void Crypto_generate_dis_proof(struct dis_proof_rep *result,
                                RandomSource source, struct hash base_hash,
                                bool selected, mpz_t public_key,
                                struct encryption_rep encryption, mpz_t nonce);
 
-void Crypto_check_decryption_cp_proof(
+bool Crypto_check_decryption_cp_proof(
     struct cp_proof_rep proof, mpz_t public_key, mpz_t partial_decryption,
     struct encryption_rep aggregate_encryption, struct hash base_hash);
 
@@ -193,6 +208,15 @@ bool Crypto_check_dis_proof(struct dis_proof_rep proof,
 
 void Crypto_cp_proof_new(struct cp_proof_rep *dst);
 void Crypto_cp_proof_free(struct cp_proof_rep *dst);
+
+void Crypto_rsa_private_key_new( rsa_private_key *dst);
+void Crypto_rsa_private_key_free( rsa_private_key *dst);
+void Crypto_rsa_private_key_copy(rsa_private_key *dst, rsa_private_key *src);
+
+void Crypto_rsa_public_key_new(rsa_public_key *dst);
+void Crypto_rsa_public_key_free(rsa_public_key *dst);
+void Crypto_rsa_public_key_copy(rsa_public_key *dst, rsa_public_key *src);
+
 
 struct encrypted_ballot_rep
 {

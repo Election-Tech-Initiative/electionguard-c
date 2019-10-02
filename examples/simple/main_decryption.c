@@ -69,7 +69,7 @@ bool decryption(FILE *in, FILE *out, struct trustee_state *trustee_states)
     }
 
     for (uint32_t i = 0; i < NUM_TRUSTEES; i++)
-        if (requests[i].bytes != NULL)
+        if (request_present[i])
         {
             free((void *)requests[i].bytes);
             requests[i].bytes = NULL;
@@ -151,7 +151,7 @@ bool decrypt_tally_shares(void)
 {
     bool ok = true;
 
-    for (uint32_t i = 0; i < NUM_TRUSTEES && ok; i++)
+    for (uint32_t i = 0; i < DECRYPTING_TRUSTEES && ok; i++)
     {
         struct decryption_share share = {.bytes = NULL};
 

@@ -1,7 +1,7 @@
 ElectionGuard SDK C Implementation
 =====================================
 
-This is the core SDK that performs election functions such as vote encryption, decryption, key generation, and tallying. This code is meant to be run on voting system hardware and to be integrated into existing (or new) voting system software. The ElectionGuard SDK is written in C and is meant to add end-to-end verifiability and encryption into 3rd party comprehensive voting systems. There is also a simplistic, proof-of-concept C application to understand how the API should be called. 
+This is the core SDK that performs election functions such as vote encryption, decryption, key generation, and tallying. This code is meant to be run on voting system hardware and to be integrated into existing (or new) voting system software. The ElectionGuard SDK is written in C and is meant to add end-to-end verifiability and encryption into 3rd party comprehensive voting systems. There is also a simplistic, proof-of-concept C application to understand how the API should be called.
 
 This implementation of the ElectionGuard SDK serves to showcase the API
 provided by the SDK. It focuses on specifying and fixing the API so
@@ -258,8 +258,7 @@ Current Limitations
 - Elections configurations are hard-coded. Later versions will be dynamically configurable by JSON input.
 - Proof checks are sanity checks only, they are suitable to double check output from a trustworthy source, but not for a verifier.
 - Election output is not yet structured for JSON output. Future versions will output data that will be compatible with our verifier specifications.
-- We have not yet implemented thresholded decryption, elections can run with multiple trustees, but all trustees must be present to decrypt.
-- Our build is not currently compatible with Visual Studio
 - The code is tested to be memory safe, however there are known memory leaks, these will be fixed in the next versions
 - Decryption works by loading the entire election into memory. Due to the size of elections, this will not be desirable for larger elections.
 - We use a dummy hash for the base hash, when JSON input is enabled, that must feed into the base hash
+- We use RSA for sharing key-shares. Ideally ElGamal would be used, however it requires different parameters than the rest of the election.

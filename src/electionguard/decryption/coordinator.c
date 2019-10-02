@@ -103,7 +103,7 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator c,
     // Check that we haven't already seen this trustee
     if (status == DECRYPTION_COORDINATOR_SUCCESS)
     {
-        if (!(share_rep.trustee_index < c->num_trustees))
+        if (share_rep.trustee_index >= c->num_trustees)
             status = DECRYPTION_COORDINATOR_INVALID_TRUSTEE_INDEX;
         else if (c->anounced[share_rep.trustee_index])
             status = DECRYPTION_COORDINATOR_DUPLICATE_TRUSTEE_INDEX;
@@ -281,6 +281,11 @@ enum Decryption_Coordinator_status Decryption_Coordinator_receive_fragments(
 
     struct decryption_fragments_rep decryption_fragments_rep;
 
+    for (uint32_t i = 0; i < c->num_trustees; i++)
+        for (uint64_t j = 0; j < c->num_tallies; j++)
+            mpz_init(decryption_fragments_rep.partial_decryption_M[i][j]);
+
+    mpz_init(decryption_fragments_rep.lagrange_coefficient);
     // Deserialize the input
     {
         struct serialize_state state = {
@@ -300,13 +305,15 @@ enum Decryption_Coordinator_status Decryption_Coordinator_receive_fragments(
     // and has not yet responded
     if (status == DECRYPTION_COORDINATOR_SUCCESS)
     {
-        if (!(decryption_fragments_rep.trustee_index < c->num_trustees))
+        if (decryption_fragments_rep.trustee_index >= c->num_trustees)
             status = DECRYPTION_COORDINATOR_INVALID_TRUSTEE_INDEX;
         else if (!c->anounced[decryption_fragments_rep.trustee_index])
             status = DECRYPTION_COORDINATOR_INVALID_TRUSTEE_INDEX;
         else if (c->responded[decryption_fragments_rep.trustee_index])
             status = DECRYPTION_COORDINATOR_DUPLICATE_TRUSTEE_INDEX;
     }
+
+    //TODO
 
     // Mark this trustee as having responded and increment the count
     // of decryption_fragments for each of the trustees for whom he is providing
@@ -317,7 +324,33 @@ enum Decryption_Coordinator_status Decryption_Coordinator_receive_fragments(
         for (uint32_t i = 0; i < c->num_trustees; i++)
             if (decryption_fragments_rep.requested[i])
                 c->num_decryption_fragments[i]++;
+
+        mpz_t res;
+
+        mpz_init(res);
+        for (uint32_t i = 0; i < c->num_trustees; i++)
+        {
+            if (decryption_fragments_rep.requested[i])
+            {
+                for (uint64_t j = 0; j < c->num_tallies; ++j)
+                {
+                    pow_mod_p(
+                        res,
+                        decryption_fragments_rep.partial_decryption_M[i][j],
+                        decryption_fragments_rep.lagrange_coefficient);
+                    mul_mod_p(c->tallies[j].nonce_encoding,
+                              c->tallies[j].nonce_encoding, res);
+                }
+            }
+        }
+        mpz_clear(res);
     }
+
+    for (uint32_t i = 0; i < c->num_trustees; i++)
+        for (uint32_t j = 0; j < decryption_fragments_rep.num_selections; j++)
+            mpz_clear(decryption_fragments_rep.partial_decryption_M[i][j]);
+
+    mpz_clear(decryption_fragments_rep.lagrange_coefficient);
 
     return status;
 }
@@ -358,19 +391,25 @@ Decryption_Coordinator_all_fragments_received(Decryption_Coordinator c,
         // the nonce encoding has been accumulated by product
         // as messages have come from trustees. Each trustee
         // sent their nonce encoding raised to their secret key
-        div_mod_p(M, c->tallies[i].message_encoding, c->tallies[i].nonce_encoding);
+        div_mod_p(M, c->tallies[i].message_encoding,
+                  c->tallies[i].nonce_encoding);
 
         //This M should be equal to g^tally
-        log_generator_mod_p(decrypted_tally, M);
-
-        printf("Tally %lu \n", mpz_get_ui(decrypted_tally));
-
-        const char *preamble_format = "tally %" PRIu64 ": ";
-        const int expected_len = snprintf(NULL, 0, preamble_format, i);
-
-        if (fprintf(out, preamble_format, i) < expected_len)
+        if (!log_generator_mod_p(decrypted_tally, M))
+        {
             status = DECRYPTION_COORDINATOR_IO_ERROR;
+        }
 
+        if (status == DECRYPTION_COORDINATOR_SUCCESS)
+        {
+            printf("Tally %lu \n", mpz_get_ui(decrypted_tally));
+
+            const char *preamble_format = "tally %" PRIu64 ": ";
+            const int expected_len = snprintf(NULL, 0, preamble_format, i);
+
+            if (fprintf(out, preamble_format, i) < expected_len)
+                status = DECRYPTION_COORDINATOR_IO_ERROR;
+        }
         if (DECRYPTION_COORDINATOR_SUCCESS == status)
         {
             if (!Crypto_encryption_fprint(out, &c->tallies[i]))

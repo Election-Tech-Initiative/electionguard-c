@@ -26,9 +26,11 @@ struct RandomSource_uniform_r {
     enum RandomSource_status status;
     uint4096 result;
 };
+uint8_t RandomSource_get_byte(RandomSource);
 
 // Uses rejection sampling to pick a number between 1 and modulus_default-1,
 // inclusive.
 struct RandomSource_uniform_r RandomSource_uniform(RandomSource source);
 enum RandomSource_status RandomSource_uniform_o(RandomSource source, uint4096 out);
 enum RandomSource_status RandomSource_uniform_bignum_o(mpz_t out, RandomSource source);
+enum RandomSource_status RandomSource_uniform_bignum_o_q(mpz_t out, RandomSource source);

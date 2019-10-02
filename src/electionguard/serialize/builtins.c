@@ -34,7 +34,7 @@ void Serialize_write_bool(struct serialize_state *state, bool const *data)
 {
     if (state->status == SERIALIZE_STATE_WRITING)
     {
-        if (data)
+        if (*data)
             state->buf[state->offset++] = 1;
         else
             state->buf[state->offset++] = 0;

@@ -46,6 +46,7 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/sha2-openbsd.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/secure_zero_memory.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/rsa.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/trustee_state_rep.h
@@ -59,6 +60,7 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/include/electionguard/decryption/coordinator.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/decryption/trustee.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/crypto.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/rsa.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/keyceremony/messages.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/keyceremony/coordinator.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/keyceremony/trustee.h
@@ -126,9 +128,10 @@ install(
 add_subdirectory(docs)
 
 file(MAKE_DIRECTORY  "${CMAKE_CURRENT_BINARY_DIR}/simple_build")
+set(CMAKE_CONFIGURATION_TYPES "Debug" CACHE STRING "" FORCE)
+
 add_test(NAME build_simple
    COMMAND "${CMAKE_COMMAND}"
-      -DCMAKE_BUILD_TYPE=Deubg
       -E env ElectionGuard_DIR=${CMAKE_CURRENT_BINARY_DIR}/ElectionGuard
       "${CMAKE_CTEST_COMMAND}"
         --build-and-test "${PROJECT_SOURCE_DIR}/examples/simple" "${CMAKE_CURRENT_BINARY_DIR}/simple_build"

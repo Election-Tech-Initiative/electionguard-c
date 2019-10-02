@@ -11,16 +11,20 @@
 #include "main_decryption.h"
 #include "main_keyceremony.h"
 #include "main_params.h"
+#include "main_rsa.h"
 #include "main_voting.h"
 
 /** Create a new temporary file from a template. */
 static FILE *fmkstemps(char const *template, const char *mode);
 
 // Election Parameters
-uint32_t const NUM_TRUSTEES = 2;
+uint32_t const NUM_TRUSTEES = 3;
 uint32_t const THRESHOLD = 2;
 uint32_t const NUM_ENCRYPTERS = 3;
 uint32_t const NUM_SELECTIONS = 3;
+uint32_t const DECRYPTING_TRUSTEES = 2;
+
+// ^The number of trustees that will participate in decryption. Will fail if this is less than THRESHOLD
 
 // This is a temporary placeholder. In a real election, this should be
 // initialized by hashing:
@@ -31,7 +35,8 @@ uint32_t const NUM_SELECTIONS = 3;
 // 5. THRESHOLD
 // 6. The date of the election
 // 7. Jurisdictional information for the election
-raw_hash BASE_HASH_CODE = {0,0xff,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+raw_hash BASE_HASH_CODE = {0, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                           0, 0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 int main()
 {
@@ -41,27 +46,26 @@ int main()
     srand(100);
 
     Crypto_parameters_new();
-    bool ok = true;
 
     // Outputs of the key ceremony
     struct trustee_state trustee_states[MAX_TRUSTEES];
     struct joint_public_key joint_key;
 
     // Key Ceremony
-    if (ok)
-        ok = key_ceremony(&joint_key, trustee_states);
+
+    bool ok = key_ceremony(&joint_key, trustee_states);
 
     // Open the voting results file
     FILE *voting_results = NULL;
 
     if (ok)
     {
-        //Gcc on windows appears to not support the "x" flag at the time of writing
-        #ifdef _WIN32
-            voting_results = fmkstemps("voting_results-XXXXXX", "w+");
-        #else
-            voting_results = fmkstemps("voting_results-XXXXXX", "w+x");
-        #endif
+//Gcc on windows appears to not support the "x" flag at the time of writing
+#ifdef _WIN32
+        voting_results = fmkstemps("voting_results-XXXXXX", "w+");
+#else
+        voting_results = fmkstemps("voting_results-XXXXXX", "w+x");
+#endif
 
         if (voting_results == NULL)
             ok = false;
@@ -74,14 +78,17 @@ int main()
     // Open the tally file
     FILE *tally = NULL;
 
+    //  // RSA encrypt decrypt check
+    //  if(ok)
+    //      ok = main_rsa();
     if (ok)
     {
-        //Gcc on windows appears to not support the "x" flag at the time of writing
-        #ifdef _WIN32
-            tally = fmkstemps("tally-XXXXXX", "w");
-        #else
-            tally = fmkstemps("tally-XXXXXX", "wx");
-        #endif
+//Gcc on windows appears to not support the "x" flag at the time of writing
+#ifdef _WIN32
+        tally = fmkstemps("tally-XXXXXX", "w");
+#else
+        tally = fmkstemps("tally-XXXXXX", "wx");
+#endif
 
         if (tally == NULL)
             ok = false;

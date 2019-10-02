@@ -2,7 +2,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <electionguard/keyceremony/trustee.h>
 #include <electionguard/max_values.h>
@@ -21,6 +20,11 @@ struct KeyCeremony_Trustee_s
     //@secret the private key must not be leaked from the system
     struct private_key private_key;
     struct public_key public_keys[MAX_TRUSTEES];
+    rsa_public_key trusties_rsa_public_keys[MAX_TRUSTEES];
+    rsa_private_key rsa_private_key;
+    rsa_public_key rsa_public_key;
+    struct encrypted_key_share my_key_shares
+        [MAX_TRUSTEES]; //The shares other trustees have sent to this trustee
 };
 
 struct KeyCeremony_Trustee_new_r KeyCeremony_Trustee_new(uint32_t num_trustees,
@@ -32,7 +36,10 @@ struct KeyCeremony_Trustee_new_r KeyCeremony_Trustee_new(uint32_t num_trustees,
 
     if (!(1 <= threshold && threshold <= num_trustees &&
           num_trustees <= MAX_TRUSTEES))
+    {
         result.status = KEYCEREMONY_TRUSTEE_INVALID_PARAMS;
+        return result;
+    }
 
     // Allocate the trustee
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
@@ -50,19 +57,38 @@ struct KeyCeremony_Trustee_new_r KeyCeremony_Trustee_new(uint32_t num_trustees,
         result.trustee->index = index;
 
         Crypto_private_key_init(&result.trustee->private_key, threshold);
-        for(int i=0; i<threshold; i++){
+        for (uint32_t i = 0; i < threshold; i++)
+        {
             Crypto_public_key_new(&result.trustee->public_keys[i], threshold);
         }
+        for (uint32_t i = 0; i < num_trustees; i++)
+        {
+            Crypto_rsa_public_key_new(
+                &result.trustee->trusties_rsa_public_keys[i]);
+            Crypto_encrypted_key_share_init(&result.trustee->my_key_shares[i]);
+        }
+        Crypto_rsa_private_key_new(&result.trustee->rsa_private_key);
+        Crypto_rsa_public_key_new(&result.trustee->rsa_public_key);
     }
 
     return result;
 }
 
-void KeyCeremony_Trustee_free(KeyCeremony_Trustee t) {
+void KeyCeremony_Trustee_free(KeyCeremony_Trustee t)
+{
     Crypto_private_key_free(&t->private_key, t->threshold);
-    for(int i=0; i<t->threshold; i++){
+    for (uint32_t i = 0; i < t->threshold; i++)
+    {
         Crypto_public_key_free(&t->public_keys[i], t->threshold);
     }
+    for (uint32_t i = 0; i < t->num_trustees; i++)
+    {
+        Crypto_rsa_public_key_free(&t->trusties_rsa_public_keys[i]);
+        Crypto_encrypted_key_share_free(&t->my_key_shares[i]);
+    }
+
+    Crypto_rsa_private_key_free(&t->rsa_private_key);
+    Crypto_rsa_public_key_free(&t->rsa_public_key);
     free(t);
 }
 
@@ -76,7 +102,10 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t, raw_hash base_hash_code)
     struct Crypto_gen_keypair_r crypto_result =
         Crypto_gen_keypair(t->threshold, base_hash_code);
     // check that we generated good proofs (right now this call crashes if the proofs fail)
-    Crypto_check_keypair_proof(crypto_result.public_key, base_hash_code);
+    if(!Crypto_check_keypair_proof(crypto_result.public_key, base_hash_code)){
+        crypto_result.status=CRYPTO_UNKNOWN_ERROR;
+    }
+
     switch (crypto_result.status)
     {
     case CRYPTO_INSUFFICIENT_MEMORY:
@@ -88,6 +117,9 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t, raw_hash base_hash_code)
         //@ assert false;
         assert(false && "unreachable");
     };
+
+    // Generate the RSA keys
+    generate_keys(&t->rsa_private_key, &t->rsa_public_key);
 
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
     {
@@ -108,9 +140,13 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t, raw_hash base_hash_code)
 
         message_rep.trustee_index = t->index;
         message_rep.public_key.threshold = t->threshold;
-        Crypto_public_key_new(&message_rep.public_key,t->threshold);
+        Crypto_public_key_new(&message_rep.public_key, t->threshold);
         Crypto_public_key_copy(&message_rep.public_key,
                                &t->public_keys[t->index]);
+
+        Crypto_rsa_public_key_new(&message_rep.rsa_public_key);
+        Crypto_rsa_public_key_copy(&message_rep.rsa_public_key,
+                                   &t->rsa_public_key);
 
         // Serialize the message
         struct serialize_state state = {
@@ -125,6 +161,8 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t, raw_hash base_hash_code)
         Serialize_write_key_generated(&state, &message_rep);
 
         Crypto_public_key_free(&message_rep.public_key, t->threshold);
+        Crypto_rsa_public_key_free(&message_rep.rsa_public_key);
+
         if (state.status != SERIALIZE_STATE_WRITING)
             result.status = KEYCEREMONY_TRUSTEE_SERIALIZE_ERROR;
         else
@@ -157,8 +195,10 @@ KeyCeremony_Trustee_generate_shares(KeyCeremony_Trustee t,
             .buf = (uint8_t *)in_message.bytes,
         };
 
-        for(int i=0; i<t->num_trustees; i++){
-            Crypto_public_key_new(&in_message_rep.public_keys[i],t->threshold);
+        for (uint32_t i = 0; i < t->num_trustees; i++)
+        {
+            Crypto_public_key_new(&in_message_rep.public_keys[i], t->threshold);
+            Crypto_rsa_public_key_new(&in_message_rep.rsa_public_keys[i]);
         }
         Serialize_read_all_keys_received(&state, &in_message_rep);
 
@@ -174,10 +214,15 @@ KeyCeremony_Trustee_generate_shares(KeyCeremony_Trustee t,
 
     // Copy other public keys into my state
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
-        for (uint32_t i = 0; i < t->num_trustees; i++){
+        for (uint32_t i = 0; i < t->num_trustees; i++)
+        {
             Crypto_public_key_copy(&t->public_keys[i],
                                    &in_message_rep.public_keys[i]);
-            Crypto_public_key_free(&in_message_rep.public_keys[i], t->threshold);
+            Crypto_rsa_public_key_copy(&t->trusties_rsa_public_keys[i],
+                                       &in_message_rep.rsa_public_keys[i]);
+            Crypto_public_key_free(&in_message_rep.public_keys[i],
+                                   t->threshold);
+            Crypto_rsa_public_key_free(&in_message_rep.rsa_public_keys[i]);
         }
 
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
@@ -187,17 +232,14 @@ KeyCeremony_Trustee_generate_shares(KeyCeremony_Trustee t,
 
         out_message_rep.trustee_index = t->index;
         out_message_rep.num_trustees = t->num_trustees;
-        //re-add for thresholding
-        //for (uint32_t i = 0; i < t->num_trustees; i++)
-        // {
-        //     Crypto_private_key_init(&out_message_rep.shares[i].private_key, t->threshold);
-        //     Crypto_private_key_copy(&out_message_rep.shares[i].private_key,
-        //                             &t->private_key);
-        //     Crypto_public_key_init(&out_message_rep.shares[i].recipient_public_key, t->threshold);
-        //     Crypto_public_key_copy(
-        //         &out_message_rep.shares[i].recipient_public_key,
-        //         &t->public_keys[i]);
-        // }
+
+        for (uint32_t i = 0; i < t->num_trustees; i++)
+        {
+            Crypto_encrypted_key_share_init(&out_message_rep.shares[i]);
+            Crypto_create_encrypted_key_share(
+                &out_message_rep.shares[i], &t->public_keys[i],
+                &t->trusties_rsa_public_keys[i], &t->private_key, i);
+        }
 
         // Serialize the message
         struct serialize_state state = {
@@ -243,11 +285,13 @@ KeyCeremony_Trustee_verify_shares(KeyCeremony_Trustee t,
             .buf = (uint8_t *)in_message.bytes,
         };
 
-        // for(int i=0; i<t->num_trustees; i++){
-        //     for(int j=0; j<t->num_trustees; j++){
-        //         Crypto_encrypted_key_share_init(&in_message_rep.shares[i][j], t->threshold);
-        //     }
-        // }
+        for (int i = 0; i < t->num_trustees; i++)
+        {
+            for (int j = 0; j < t->num_trustees; j++)
+            {
+                Crypto_encrypted_key_share_init(&in_message_rep.shares[i][j]);
+            }
+        }
         Serialize_read_all_shares_received(&state, &in_message_rep);
 
         if (state.status != SERIALIZE_STATE_READING)
@@ -256,14 +300,27 @@ KeyCeremony_Trustee_verify_shares(KeyCeremony_Trustee t,
 
     // Check that all the shares meant for me match the public keys
     // previously received
-    for (uint32_t i = 0; i < t->threshold; i++)
+    for (uint32_t i = 0; i < t->num_trustees; i++)
     {
-        /* Disabled since we aren't using shares for now
-        struct encrypted_key_share share = in_message_rep.shares[t->index][i];
-        if (!Crypto_public_key_equal(&share.recipient_public_key,
-                                     &t->public_keys[i]))
+        struct encrypted_key_share share = in_message_rep.shares[i][t->index];
+        struct public_key *pubKeys = &t->public_keys[i];
+        rsa_private_key rsaPrivateKey = t->rsa_private_key;
+
+        if (!Crypto_check_validity_share_against_public_keys(
+                &share, pubKeys, &rsaPrivateKey, t->threshold, t->index))
+        {
             result.status = KEYCEREMONY_TRUSTEE_INVALID_KEY_SHARE;
-        */
+            break;
+        }
+    }
+    if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
+    {
+        //Copy the shares meant for me into my state
+        for (uint32_t i = 0; i < t->num_trustees; i++)
+        {
+            Crypto_encrypted_key_share_copy(
+                &t->my_key_shares[i], &in_message_rep.shares[i][t->index]);
+        }
     }
 
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
@@ -295,11 +352,13 @@ KeyCeremony_Trustee_verify_shares(KeyCeremony_Trustee t,
                 .bytes = state.buf,
             };
         }
-        // for(int i=0; i<t->num_trustees; i++){
-        //     for(int j=0; j<t->num_trustees; j++){
-        //         Crypto_encrypted_key_share_free(&in_message_rep.shares[i][j], t->threshold);
-        //     }
-        // }
+        for (int i = 0; i < t->num_trustees; i++)
+        {
+            for (int j = 0; j < t->num_trustees; j++)
+            {
+                Crypto_encrypted_key_share_free(&in_message_rep.shares[i][j]);
+            }
+        }
     }
 
     return result;
@@ -314,8 +373,18 @@ KeyCeremony_Trustee_export_state(KeyCeremony_Trustee t)
     {
         struct trustee_state_rep rep;
         rep.index = t->index;
-        Crypto_private_key_init(&rep.private_key,t->threshold);
+        Crypto_private_key_init(&rep.private_key, t->threshold);
         Crypto_private_key_copy(&rep.private_key, &t->private_key);
+
+        Crypto_rsa_private_key_new(&rep.rsa_private_key);
+        Crypto_rsa_private_key_copy(&rep.rsa_private_key, &t->rsa_private_key);
+
+        for (uint32_t i = 0; i < t->num_trustees; i++)
+        {
+            Crypto_encrypted_key_share_init(&rep.my_key_shares[i]);
+            Crypto_encrypted_key_share_copy(&rep.my_key_shares[i],
+                                            &t->my_key_shares[i]);
+        }
 
         // Serialize the message
         struct serialize_state state = {
@@ -325,9 +394,9 @@ KeyCeremony_Trustee_export_state(KeyCeremony_Trustee t)
             .buf = NULL,
         };
 
-        Serialize_reserve_trustee_state(&state, &rep);
+        Serialize_reserve_trustee_state(&state, &rep, t->num_trustees);
         Serialize_allocate(&state);
-        Serialize_write_trustee_state(&state, &rep);
+        Serialize_write_trustee_state(&state, &rep, t->num_trustees);
 
         if (state.status != SERIALIZE_STATE_WRITING)
             result.status = KEYCEREMONY_TRUSTEE_SERIALIZE_ERROR;

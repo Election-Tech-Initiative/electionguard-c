@@ -1,13 +1,11 @@
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <electionguard/crypto.h>
-
-#include "crypto_reps.h"
-#include "random_source.h"
 #include "serialize/crypto.h"
+#include "crypto_reps.h"
+#include "electionguard/rsa.h"
+#include "random_source.h"
 #include "sha2-openbsd.h"
+#include <assert.h>
+#include <electionguard/crypto.h>
+#include <stdlib.h>
 //#define DEBUG_PRINT =0
 
 void Crypto_hash_final(struct hash *out, SHA2_CTX *context)
@@ -24,7 +22,14 @@ void Crypto_hash_reduce(struct hash *out, raw_hash bytes)
     mod_q(out->digest, out->digest);
 }
 
-void Crypto_hash_update_bignum(SHA2_CTX *context, mpz_t num)
+void Crypto_hash_update_bignum_q(SHA2_CTX *context, mpz_t num)
+{
+    uint8_t *buf = (uint8_t*)export_to_256(num);
+    SHA256Update(context, buf, 256/8);
+    free(buf);
+}
+
+void Crypto_hash_update_bignum_p(SHA2_CTX *context, mpz_t num)
 {
     uint8_t *serialized_buffer = Serialize_reserve_write_bignum(num);
     SHA256Update(context, serialized_buffer, 4096 / 8);
@@ -69,16 +74,18 @@ Crypto_RandomSource_status_convert(enum RandomSource_status status)
         return CRYPTO_UNKNOWN_ERROR;
     }
 }
-
+//the base_hash_code is a placeholder for a version of the function that should do the hash checking
+//and is not used in the current function implementation.
 bool Crypto_check_keypair_proof(struct public_key key, raw_hash base_hash_code)
 {
+    bool result = true;
     mpz_t gu;
     mpz_t hkc;
     mpz_init(gu);
     mpz_init(hkc);
 
     //TODO check the hash
-    for (int i = 0; i < key.proof.threshold; i++)
+    for (uint32_t i = 0; i < key.proof.threshold; i++)
     {
         // printf("commitment %d\n", i);
         // print_base16(key.coef_commitments[i]);
@@ -89,11 +96,13 @@ bool Crypto_check_keypair_proof(struct public_key key, raw_hash base_hash_code)
         pow_mod_p(gu, generator, key.proof.challenge_responses[i]);
         pow_mod_p(hkc, key.coef_commitments[i], key.proof.challenge.digest);
         mul_mod_p(hkc, key.proof.commitments[i], hkc);
-        assert(0 == mpz_cmp(gu, hkc));
+        result &= (0 == mpz_cmp(gu, hkc));
     }
 
     mpz_clear(gu);
     mpz_clear(hkc);
+
+    return result;
 }
 
 struct Crypto_gen_keypair_r Crypto_gen_keypair(uint32_t num_coefficients,
@@ -107,14 +116,9 @@ struct Crypto_gen_keypair_r Crypto_gen_keypair(uint32_t num_coefficients,
 
     Crypto_private_key_init(&result.private_key, num_coefficients);
     Crypto_public_key_new(&result.public_key, num_coefficients);
-
-    RandomSource source;
-    if (CRYPTO_SUCCESS == result.status)
-    {
-        struct RandomSource_new_r source_r = RandomSource_new();
-        source = source_r.source;
-        result.status = Crypto_RandomSource_status_convert(source_r.status);
-    }
+    struct RandomSource_new_r source_r = RandomSource_new();
+    RandomSource source = source_r.source;
+    result.status = Crypto_RandomSource_status_convert(source_r.status);
 
     for (uint32_t i = 0; i < num_coefficients; i++)
     {
@@ -145,7 +149,7 @@ struct Crypto_gen_keypair_r Crypto_gen_keypair(uint32_t num_coefficients,
 
         for (uint32_t i = 0; i < num_coefficients; i++)
         {
-            Crypto_hash_update_bignum(&context,
+            Crypto_hash_update_bignum_p(&context,
                                       result.public_key.coef_commitments[i]);
         }
 
@@ -153,15 +157,15 @@ struct Crypto_gen_keypair_r Crypto_gen_keypair(uint32_t num_coefficients,
              i < num_coefficients && CRYPTO_SUCCESS == result.status; i++)
         {
             result.status = Crypto_RandomSource_status_convert(
-                RandomSource_uniform_bignum_o(
+                RandomSource_uniform_bignum_o_q(
                     result.public_key.proof.challenge_responses[i], source));
 
             if (CRYPTO_SUCCESS == result.status)
             {
                 pow_mod_p(result.public_key.proof.commitments[i], generator,
                           result.public_key.proof.challenge_responses[i]);
-                Crypto_hash_update_bignum(
-                    &context, result.public_key.proof.challenge_responses[i]);
+                Crypto_hash_update_bignum_p(
+                    &context, result.public_key.proof.commitments[i]);
             }
         }
 
@@ -267,7 +271,7 @@ void Crypto_schnorr_proof_copy(struct schnorr_proof *dst,
                                struct schnorr_proof const *src)
 {
     dst->threshold = src->threshold;
-    for (int i = 0; i < dst->threshold; i++)
+    for (uint32_t i = 0; i < dst->threshold; i++)
     {
         mpz_set(dst->commitments[i], src->commitments[i]);
         mpz_set(dst->challenge_responses[i], src->challenge_responses[i]);
@@ -275,26 +279,154 @@ void Crypto_schnorr_proof_copy(struct schnorr_proof *dst,
     mpz_set(dst->challenge.digest, src->challenge.digest);
 }
 
-void Crypto_encrypted_key_share_init(struct encrypted_key_share *dst,
-                                     int threshold)
+void Crypto_rsa_private_key_new(rsa_private_key *dst)
 {
-    Crypto_private_key_init(&dst->private_key, threshold);
-    Crypto_public_key_new(&dst->recipient_public_key, threshold);
+    mpz_inits(dst->q, dst->p, dst->d, dst->n, dst->e, NULL);
 }
 
-void Crypto_encrypted_key_share_free(struct encrypted_key_share *dst,
-                                     int threshold)
+void Crypto_rsa_private_key_free(rsa_private_key *dst)
 {
-    Crypto_private_key_free(&dst->private_key, threshold);
-    Crypto_public_key_free(&dst->recipient_public_key, threshold);
+    mpz_clears(dst->q, dst->p, dst->d, dst->n, dst->e, NULL);
+}
+
+void Crypto_rsa_public_key_new(rsa_public_key *dst)
+{ // initialize rsa public key
+    mpz_inits(dst->e, dst->n, NULL);
+}
+
+void Crypto_rsa_public_key_free(rsa_public_key *dst)
+{
+    // clear rsa public key
+    mpz_clears(dst->e, dst->n, NULL);
+}
+
+void Crypto_rsa_public_key_copy(rsa_public_key *dst, rsa_public_key *src)
+{ // copy public rsa key
+    mpz_set(dst->n, src->n);
+    mpz_set(dst->e, src->e);
+}
+
+// initialize individualPrivateKeyShare
+void Crypto_individualPrivateKeyShare_init(
+    struct individualPrivateKeyShare *dst)
+{
+    //initialize share
+    mpz_init(dst->share);
+    //initialize private key
+}
+
+// free individualPrivateKeyShare
+void Crypto_individualPrivateKeyShare_free(
+    struct individualPrivateKeyShare *dst)
+{
+    //free share
+    mpz_clear(dst->share);
+}
+
+void Crypto_rsa_private_key_copy(rsa_private_key *dst, rsa_private_key *src)
+{
+    // copy private rsa key
+    mpz_set(dst->e, src->e);
+    mpz_set(dst->n, src->n);
+    mpz_set(dst->d, src->d);
+    mpz_set(dst->p, src->p);
+    mpz_set(dst->q, src->q);
+}
+
+// calculate sum [ a * (x ^^ j) | a <- priv.coefficientsPK | j <- [0...] ]
+//parameter out must be initialized
+void computeTrusteePolynomial(mpz_t out,                      //out
+                              struct private_key *privateKey, //in
+                              uint32_t index                  //in
+)
+{
+    uint32_t upperBound = privateKey->threshold;
+    mpz_t t_1, t_2, i_t, index_t;
+    mpz_inits(t_1, t_2, i_t, index_t, NULL);
+    mpz_set_ui(index_t, index);
+    mpz_set_ui(out,0);
+    for (uint32_t i = 0; i <= upperBound; i++)
+    {
+        mpz_set_ui(i_t, i);
+        pow_mod_q(t_1, index_t, i_t);
+        mul_mod_q(t_2, privateKey->coefficients[i], t_1);
+        add_mod_q(out, out, t_2);
+    }
+    mpz_clears(t_1, t_2, i_t, index_t, NULL);
+}
+
+bool Crypto_check_validity_share_against_public_keys(
+    struct encrypted_key_share *share, struct public_key *pubKeys,
+    rsa_private_key *privateKey, uint32_t num_trusties, uint32_t my_index)
+{
+    mpz_t out_1;
+    mpz_init(out_1);
+    mpz_set_ui(out_1, 1);
+
+    mpz_t out_2;
+    mpz_init(out_2);
+
+    mpz_t origin;
+    mpz_init(origin);
+
+    mpz_t exp;
+    mpz_init(exp);
+
+    for (uint32_t i = 0; i < num_trusties; i++){
+        mpz_set_ui(exp, my_index+1);
+        mpz_pow_ui(exp, exp, i);
+        pow_mod_p(exp, pubKeys->coef_commitments[i],exp);
+        mul_mod_p(out_1, out_1, exp);
+    }
+
+    RSA_Decrypt(origin, share->encrypted, privateKey);
+
+    pow_mod_p(out_2, generator, origin);
+
+    bool isValid = mpz_cmp(out_1, out_2) == 0;
+    mpz_clears(out_1, out_2, origin, NULL);
+
+    return isValid;
+}
+
+
+void Crypto_create_encrypted_key_share(struct encrypted_key_share *dest, //out
+                                       struct public_key *pub_key,       //in
+                                       rsa_public_key *rsa_pub_key,      //in
+                                       struct private_key *priv_key,     //in
+                                       uint32_t index                    //in
+)
+{
+
+    mpz_t out;
+    mpz_init(out);
+
+    mpz_t encrypted;
+    mpz_init(encrypted);
+
+    computeTrusteePolynomial(out, priv_key, index + 1);
+
+    RSA_Encrypt(encrypted, out, rsa_pub_key);
+
+    mpz_set(dest->encrypted, encrypted);
+
+    mpz_clears(out, encrypted, NULL);
+}
+
+void Crypto_encrypted_key_share_init(struct encrypted_key_share *dst)
+{
+    mpz_init(dst->encrypted);
+}
+
+void Crypto_encrypted_key_share_free(struct encrypted_key_share *dst)
+{
+    mpz_clear(dst->encrypted);
 }
 
 void Crypto_encrypted_key_share_copy(struct encrypted_key_share *dst,
                                      struct encrypted_key_share const *src)
 {
-    Crypto_private_key_copy(&dst->private_key, &src->private_key);
-    Crypto_public_key_copy(&dst->recipient_public_key,
-                           &src->recipient_public_key);
+    mpz_set(dst->encrypted, src->encrypted);
 }
 
 void Crypto_joint_public_key_init(struct joint_public_key_rep *dst)
@@ -352,10 +484,10 @@ void Crypto_cp_proof_challenge(struct hash *challenge_out,
     //Generate the challenge
     SHA256Init(&context);
     SHA256Update(&context, base_serial, SHA256_DIGEST_LENGTH);
-    Crypto_hash_update_bignum(&context, encryption.nonce_encoding);
-    Crypto_hash_update_bignum(&context, encryption.message_encoding);
-    Crypto_hash_update_bignum(&context, commitment.nonce_encoding);
-    Crypto_hash_update_bignum(&context, commitment.message_encoding);
+    Crypto_hash_update_bignum_p(&context, encryption.nonce_encoding);
+    Crypto_hash_update_bignum_p(&context, encryption.message_encoding);
+    Crypto_hash_update_bignum_p(&context, commitment.nonce_encoding);
+    Crypto_hash_update_bignum_p(&context, commitment.message_encoding);
     Crypto_hash_final(challenge_out, &context);
 }
 
@@ -367,13 +499,11 @@ void Crypto_generate_decryption_cp_proof(
     mpz_t u;
     mpz_init(u);
 
-    //TODO: Save one of these in the trustee
     RandomSource source;
     struct RandomSource_new_r source_r = RandomSource_new();
     source = source_r.source;
 
-    //TODO If we change the exponent prime, this will be wrong
-    RandomSource_uniform_bignum_o(u, source);
+    RandomSource_uniform_bignum_o_q(u, source);
 
     // commitment a in the documents
     pow_mod_p(result->commitment.nonce_encoding, generator, u);
@@ -391,11 +521,11 @@ void Crypto_generate_decryption_cp_proof(
     //Generate the challenge
     SHA256Init(&context);
     SHA256Update(&context, base_serial, SHA256_DIGEST_LENGTH);
-    Crypto_hash_update_bignum(&context, aggregate_encryption.nonce_encoding);
-    Crypto_hash_update_bignum(&context, aggregate_encryption.message_encoding);
-    Crypto_hash_update_bignum(&context, result->commitment.nonce_encoding);
-    Crypto_hash_update_bignum(&context, result->commitment.message_encoding);
-    Crypto_hash_update_bignum(&context, partial_decryption);
+    Crypto_hash_update_bignum_p(&context, aggregate_encryption.nonce_encoding);
+    Crypto_hash_update_bignum_p(&context, aggregate_encryption.message_encoding);
+    Crypto_hash_update_bignum_p(&context, result->commitment.nonce_encoding);
+    Crypto_hash_update_bignum_p(&context, result->commitment.message_encoding);
+    Crypto_hash_update_bignum_p(&context, partial_decryption);
     Crypto_hash_final(&result->challenge, &context);
 
     // CR in the doc
@@ -406,10 +536,12 @@ void Crypto_generate_decryption_cp_proof(
     RandomSource_free(source);
 }
 
-void Crypto_check_decryption_cp_proof(
+bool Crypto_check_decryption_cp_proof(
     struct cp_proof_rep proof, mpz_t public_key, mpz_t partial_decryption,
-    struct encryption_rep aggregate_encryption, struct hash base_hash){
+    struct encryption_rep aggregate_encryption, struct hash base_hash)
+{
 
+    bool result = true;
     mpz_t gv, av, akc, bbc;
     mpz_init(gv);
     mpz_init(akc);
@@ -420,7 +552,7 @@ void Crypto_check_decryption_cp_proof(
     pow_mod_p(akc, public_key, proof.challenge.digest);
     mul_mod_p(akc, proof.commitment.nonce_encoding, akc);
 
-    assert(0 == mpz_cmp(gv, akc));
+    result &= (0 == mpz_cmp(gv, akc));
 
     //A^v
     pow_mod_p(av, aggregate_encryption.nonce_encoding, proof.response);
@@ -429,18 +561,23 @@ void Crypto_check_decryption_cp_proof(
     //b*Beta^c
     mul_mod_p(bbc, proof.commitment.message_encoding, bbc);
 
-    assert(0 == mpz_cmp(av, bbc));
+    result &= (0 == mpz_cmp(av, bbc));
 
     mpz_clear(gv);
     mpz_clear(akc);
     mpz_clear(av);
     mpz_clear(bbc);
-    }
+    return result;
+}
 
+
+//Check the proof, true means the proof checked
 _Bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
                                       struct encryption_rep encryption,
                                       struct hash base_hash, mpz_t public_key)
 {
+
+    _Bool result = true;
 
     //TODO check ranges of values
     SHA2_CTX context;
@@ -453,13 +590,13 @@ _Bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
     //Generate the challenge
     SHA256Init(&context);
     SHA256Update(&context, base_serial, SHA256_DIGEST_LENGTH);
-    Crypto_hash_update_bignum(&context, encryption.nonce_encoding);
-    Crypto_hash_update_bignum(&context, encryption.message_encoding);
-    Crypto_hash_update_bignum(&context, proof.commitment.nonce_encoding);
-    Crypto_hash_update_bignum(&context, proof.commitment.message_encoding);
+    Crypto_hash_update_bignum_p(&context, encryption.nonce_encoding);
+    Crypto_hash_update_bignum_p(&context, encryption.message_encoding);
+    Crypto_hash_update_bignum_p(&context, proof.commitment.nonce_encoding);
+    Crypto_hash_update_bignum_p(&context, proof.commitment.message_encoding);
     Crypto_hash_final(&my_C, &context);
 
-    assert(0 == mpz_cmp(my_C.digest, proof.challenge.digest));
+    result &= (0 == mpz_cmp(my_C.digest, proof.challenge.digest));
 
     mpz_t gv, aac, glc, glckv, bbc;
     mpz_init(gv);
@@ -472,7 +609,7 @@ _Bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
     pow_mod_p(aac, encryption.nonce_encoding, my_C.digest);
     mul_mod_p(aac, proof.commitment.nonce_encoding, aac);
 
-    assert(0 == mpz_cmp(gv, aac));
+    result &= (0 == mpz_cmp(gv, aac));
 
     //L is 1 for now, so this is g^LC when this multiplication happens it should be mod q
     pow_mod_p(glc, generator, my_C.digest);
@@ -486,7 +623,7 @@ _Bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
     //b*Beta^c
     mul_mod_p(bbc, proof.commitment.message_encoding, bbc);
 
-    assert(0 == mpz_cmp(glckv, bbc));
+    result &= (0 == mpz_cmp(glckv, bbc));
 
     mpz_clear(gv);
     mpz_clear(aac);
@@ -494,7 +631,7 @@ _Bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
     mpz_clear(glckv);
     mpz_clear(bbc);
     mpz_clear(my_C.digest);
-    return 1;
+    return result;
 }
 
 void Crypto_generate_aggregate_cp_proof(struct cp_proof_rep *result,
@@ -506,8 +643,7 @@ void Crypto_generate_aggregate_cp_proof(struct cp_proof_rep *result,
     mpz_t u;
     mpz_init(u);
 
-    //TODO If we change the exponent prime, this will be wrong
-    RandomSource_uniform_bignum_o(u, source);
+    RandomSource_uniform_bignum_o_q(u, source);
 
     // commitment a in the documents
     pow_mod_p(result->commitment.nonce_encoding, generator, u);
@@ -552,7 +688,7 @@ void Crypto_generate_dis_proof(struct dis_proof_rep *result,
     mpz_init(u);
 
     // Generate the randomness and the fake proof
-    RandomSource_uniform_bignum_o(u, source);
+    RandomSource_uniform_bignum_o_q(u, source);
     RandomSource_uniform_bignum_o(fake_challenge, source);
     RandomSource_uniform_bignum_o(fake_response, source);
 
@@ -588,22 +724,22 @@ void Crypto_generate_dis_proof(struct dis_proof_rep *result,
 
     SHA256Init(&context);
     SHA256Update(&context, base_serial, SHA256_DIGEST_LENGTH);
-    Crypto_hash_update_bignum(&context, encryption.nonce_encoding);
-    Crypto_hash_update_bignum(&context, encryption.message_encoding);
+    Crypto_hash_update_bignum_p(&context, encryption.nonce_encoding);
+    Crypto_hash_update_bignum_p(&context, encryption.message_encoding);
 
     if (selected)
     {
-        Crypto_hash_update_bignum(&context, fake_commitment.nonce_encoding);
-        Crypto_hash_update_bignum(&context, fake_commitment.message_encoding);
-        Crypto_hash_update_bignum(&context, real_commitment.nonce_encoding);
-        Crypto_hash_update_bignum(&context, real_commitment.message_encoding);
+        Crypto_hash_update_bignum_p(&context, fake_commitment.nonce_encoding);
+        Crypto_hash_update_bignum_p(&context, fake_commitment.message_encoding);
+        Crypto_hash_update_bignum_p(&context, real_commitment.nonce_encoding);
+        Crypto_hash_update_bignum_p(&context, real_commitment.message_encoding);
     }
     else
     {
-        Crypto_hash_update_bignum(&context, real_commitment.nonce_encoding);
-        Crypto_hash_update_bignum(&context, real_commitment.message_encoding);
-        Crypto_hash_update_bignum(&context, fake_commitment.nonce_encoding);
-        Crypto_hash_update_bignum(&context, fake_commitment.message_encoding);
+        Crypto_hash_update_bignum_p(&context, real_commitment.nonce_encoding);
+        Crypto_hash_update_bignum_p(&context, real_commitment.message_encoding);
+        Crypto_hash_update_bignum_p(&context, fake_commitment.nonce_encoding);
+        Crypto_hash_update_bignum_p(&context, fake_commitment.message_encoding);
     }
     Crypto_hash_final(&result->challenge, &context);
 
@@ -644,17 +780,19 @@ void Crypto_generate_dis_proof(struct dis_proof_rep *result,
     //TODO
 }
 
+//Check the proof, true means the proof checked
 bool Crypto_check_dis_proof(struct dis_proof_rep proof,
                             struct encryption_rep encryption,
                             struct hash base_hash, mpz_t public_key)
 {
+    bool result = true;
 
     mpz_t my_challenge;
     mpz_init(my_challenge);
 
     add_mod_q(my_challenge, proof.challenge0, proof.challenge1);
     //Check c = c0 + c1 mod q
-    assert(0 == mpz_cmp(proof.challenge.digest, my_challenge));
+    result = (0 == mpz_cmp(proof.challenge.digest, my_challenge));
 
     //TODO we can probably share some code with the disjunctive and decryption proofs here
     mpz_t gv, aac, glc, glckv, bbc;
@@ -668,13 +806,13 @@ bool Crypto_check_dis_proof(struct dis_proof_rep proof,
     pow_mod_p(aac, encryption.nonce_encoding, proof.challenge0);
     mul_mod_p(aac, proof.commitment0.nonce_encoding, aac);
 
-    assert(0 == mpz_cmp(gv, aac));
+    result &= (0 == mpz_cmp(gv, aac));
 
     pow_mod_p(gv, generator, proof.response1);
     pow_mod_p(aac, encryption.nonce_encoding, proof.challenge1);
     mul_mod_p(aac, proof.commitment1.nonce_encoding, aac);
 
-    assert(0 == mpz_cmp(gv, aac));
+    result &= (0 == mpz_cmp(gv, aac));
 
     // K^v
     pow_mod_p(glckv, public_key, proof.response0);
@@ -684,7 +822,7 @@ bool Crypto_check_dis_proof(struct dis_proof_rep proof,
     //b*Beta^c
     mul_mod_p(bbc, proof.commitment0.message_encoding, bbc);
 
-    assert(0 == mpz_cmp(glckv, bbc));
+    result &= (0 == mpz_cmp(glckv, bbc));
 
     //g^c1
     pow_mod_p(glc, generator, proof.challenge1);
@@ -697,7 +835,7 @@ bool Crypto_check_dis_proof(struct dis_proof_rep proof,
     //b*Beta^c
     mul_mod_p(bbc, proof.commitment1.message_encoding, bbc);
 
-    assert(0 == mpz_cmp(glckv, bbc));
+    result &= (0 == mpz_cmp(glckv, bbc));
 
     mpz_clear(gv);
     mpz_clear(aac);
@@ -706,6 +844,7 @@ bool Crypto_check_dis_proof(struct dis_proof_rep proof,
     mpz_clear(bbc);
 
     mpz_clear(my_challenge);
+    return result;
 }
 
 //Encrypt a message mapped onto the group (e.g. g^message % p)
@@ -808,10 +947,7 @@ int mpz_t_fprint(FILE *out, const mpz_t z)
 
 bool Crypto_encryption_fprint(FILE *out, const struct encryption_rep *rep)
 {
-    bool ok = true;
-
-    if (ok)
-        ok = fprintf(out, "(") == 1;
+    bool ok = fprintf(out, "(") == 1;
     if (ok)
         ok = mpz_t_fprint(out, rep->nonce_encoding);
     if (ok)
@@ -835,7 +971,7 @@ Crypto_encrypted_ballot_new(uint32_t num_selections, uint64_t id)
     result.result.dis_proof =
         malloc(num_selections * sizeof(*result.result.dis_proof));
 
-    for (int i = 0; i < num_selections; i++)
+    for (uint32_t i = 0; i < num_selections; i++)
     {
         Crypto_encryption_rep_new(&result.result.selections[i]);
         Crypto_dis_proof_new(&result.result.dis_proof[i]);
@@ -848,7 +984,7 @@ Crypto_encrypted_ballot_new(uint32_t num_selections, uint64_t id)
 
 void Crypto_encrypted_ballot_free(struct encrypted_ballot_rep *ballot)
 {
-    for (int i = 0; i < ballot->num_selections; i++)
+    for (uint32_t i = 0; i < ballot->num_selections; i++)
     {
         Crypto_encryption_rep_free(&ballot->selections[i]);
     }

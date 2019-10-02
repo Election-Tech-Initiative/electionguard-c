@@ -21,6 +21,9 @@ struct Decryption_Trustee_s
     //@secret the private key must not be leaked from the system
     struct private_key private_key;
     struct hash base_hash;
+    struct encrypted_key_share my_key_shares
+        [MAX_TRUSTEES]; //The shares other trustees have sent to this trustee
+    rsa_private_key rsa_private_key;
 };
 
 struct Decryption_Trustee_new_r
@@ -38,6 +41,13 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
     struct trustee_state_rep state_rep;
 
     Crypto_private_key_init(&state_rep.private_key, threshold);
+    Crypto_rsa_private_key_new(&state_rep.rsa_private_key);
+
+    for (uint32_t i = 0; i < num_trustees; i++)
+    {
+        Crypto_encrypted_key_share_init(&state_rep.my_key_shares[i]);
+    }
+
     // Deserialize the input
     {
         struct serialize_state state = {
@@ -47,7 +57,7 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
             .buf = (uint8_t *)message.bytes,
         };
 
-        Serialize_read_trustee_state(&state, &state_rep);
+        Serialize_read_trustee_state(&state, &state_rep, num_trustees);
 
         if (state.status != SERIALIZE_STATE_READING)
             result.status = DECRYPTION_TRUSTEE_DESERIALIZE_ERROR;
@@ -88,6 +98,27 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
         Crypto_private_key_init(&result.decryptor->private_key, threshold);
         Crypto_private_key_copy(&result.decryptor->private_key,
                                 &state_rep.private_key);
+
+        Crypto_rsa_private_key_new(&result.decryptor->rsa_private_key);
+        Crypto_rsa_private_key_copy(&result.decryptor->rsa_private_key,
+                                    &state_rep.rsa_private_key);
+
+        for (uint32_t i = 0; i < num_trustees; i++)
+        {
+            Crypto_encrypted_key_share_init(
+                &result.decryptor->my_key_shares[i]);
+            Crypto_encrypted_key_share_copy(&result.decryptor->my_key_shares[i],
+                                            &state_rep.my_key_shares[i]);
+        }
+    }
+
+    // Free the message
+    Crypto_private_key_free(&state_rep.private_key, threshold);
+    Crypto_rsa_private_key_free(&state_rep.rsa_private_key);
+
+    for (uint32_t i = 0; i < num_trustees; i++)
+    {
+        Crypto_encrypted_key_share_free(&state_rep.my_key_shares[i]);
     }
 
     return result;
@@ -100,6 +131,11 @@ void Decryption_Trustee_free(Decryption_Trustee d)
         Crypto_encryption_rep_free(&d->tallies[i]);
     }
     Crypto_private_key_free(&d->private_key, d->threshold);
+    Crypto_rsa_private_key_free(&d->rsa_private_key);
+    for (size_t i = 0; i < d->num_trustees; i++)
+    {
+        Crypto_encrypted_key_share_free(&d->my_key_shares[i]);
+    }
     mpz_clear(d->base_hash.digest);
 
     free(d);
@@ -280,6 +316,66 @@ Decryption_Trustee_compute_share(Decryption_Trustee d)
 
     return result;
 }
+//auxilary functions
+
+size_t compute_size_of_available_trusties(const bool *requested,
+                                          uint32_t num_trustees)
+{
+    size_t size = 0;
+    for (size_t i = 0; i < num_trustees; i++)
+        if (!requested[i])
+            size += 1;
+    return size;
+}
+
+void create_array_of_available_trusties(size_t *arr, const bool requested[],
+                                        uint32_t num_trustees)
+{
+    size_t j = 0;
+    for (size_t i = 0; i < num_trustees; i++)
+    {
+        if (!requested[i])
+        {
+            arr[j] = i;
+            j += 1;
+        }
+    }
+}
+
+void product_1(mpz_t product, size_t ai, const size_t arr[], size_t size)
+{
+    mpz_t tmp;
+    mpz_init(tmp);
+    mpz_set_ui(product, 1);
+    for (size_t i = 0; i < size; i++)
+        if (ai != arr[i])
+        {
+            mpz_set_ui(tmp, arr[i] + 1);
+            mul_mod_q(product, product, tmp);
+        }
+    mpz_clear(tmp);
+}
+
+void product_2(mpz_t product, size_t ai, const size_t *arr, size_t size)
+{
+    mpz_t tmp, ai_tmp, arri_tmp;
+    mpz_init(tmp);
+    mpz_init(ai_tmp);
+    mpz_init(arri_tmp);
+    mpz_set_ui(product, 1);
+    for (size_t i = 0; i < size; i++)
+    {
+        if (ai != arr[i])
+        {
+            mpz_set_ui(ai_tmp, ai + 1);
+            mpz_set_ui(arri_tmp, arr[i] + 1);
+            sub_mod_q(tmp, arri_tmp, ai_tmp);
+            mul_mod_q(product, product, tmp);
+            //            product = product * (arr[i]-ai);
+        }
+    }
+    mpz_clears(tmp, ai_tmp, arri_tmp, NULL);
+}
 
 struct Decryption_Trustee_compute_fragments_r
 Decryption_Trustee_compute_fragments(Decryption_Trustee d,
@@ -313,6 +409,72 @@ Decryption_Trustee_compute_fragments(Decryption_Trustee d,
         decryption_fragments_rep.num_trustees = req_rep.num_trustees;
         memcpy(decryption_fragments_rep.requested, req_rep.requested,
                req_rep.num_trustees * sizeof(bool));
+        decryption_fragments_rep.num_selections = d->num_selections;
+        //initialize partial_decryption_M and Lagrange coefficients
+        for (uint32_t j = 0; j < d->num_trustees; j++)
+            for (uint32_t k = 0; k < d->num_selections; ++k)
+                mpz_init(decryption_fragments_rep.partial_decryption_M[j][k]);
+
+        mpz_init(decryption_fragments_rep.lagrange_coefficient);
+
+        // create partial_decryption_M for all non available trusties and all tallies
+        for (size_t i = 0; i < d->num_trustees; i++)
+        {
+            if (decryption_fragments_rep.requested[i])
+                for (uint32_t j = 0; j < d->num_selections; j++)
+                {
+                    mpz_t origin;
+                    mpz_init(origin);
+                    RSA_Decrypt(origin, d->my_key_shares[i].encrypted,
+                                &d->rsa_private_key);
+                    pow_mod_p(
+                        decryption_fragments_rep.partial_decryption_M[i][j],
+                        d->tallies[j].nonce_encoding, origin);
+                    mpz_clear(origin);
+                }
+        }
+
+        // calculate Lagrange coefficient w
+        size_t size;
+        size = compute_size_of_available_trusties(
+            decryption_fragments_rep.requested, d->num_trustees);
+        size_t arr[size]; // create array of available trusties indices
+        create_array_of_available_trusties(
+            arr, decryption_fragments_rep.requested, d->num_trustees);
+        mpz_t product_U, product_D, w;
+        mpz_init(product_U);
+        mpz_init(product_D);
+        mpz_init(w);
+        product_1(product_U, d->index, arr, size);
+        product_2(product_D, d->index, arr, size);
+        div_mod_q(w, product_U, product_D);
+
+        mpz_set(decryption_fragments_rep.lagrange_coefficient, w);
+        mpz_clears(product_D, product_U, w, NULL);
+
+        //Generate the proof
+        for (size_t i = 0; i < d->num_trustees; i++)
+        {
+            if (decryption_fragments_rep.requested[i])
+                for (uint32_t j = 0; j < d->num_selections; j++)
+                {
+                    Crypto_cp_proof_new(&decryption_fragments_rep.cp_proofs[i][j]);
+                    mpz_t origin;
+                    mpz_init(origin);
+                    RSA_Decrypt(origin, d->my_key_shares[i].encrypted,
+                                &d->rsa_private_key);
+                    Crypto_generate_decryption_cp_proof(
+                            &decryption_fragments_rep.cp_proofs[i][j], origin,
+                            decryption_fragments_rep.partial_decryption_M[i][j], d->tallies[j],
+                            d->base_hash);
+                    pow_mod_p(origin, generator, origin);
+                    Crypto_check_decryption_cp_proof(
+                            decryption_fragments_rep.cp_proofs[i][j], origin,
+                            decryption_fragments_rep.partial_decryption_M[i][j], d->tallies[j],
+                            d->base_hash);
+                    mpz_clear(origin);
+                }
+        }
 
         // Serialize the message
         struct serialize_state state = {

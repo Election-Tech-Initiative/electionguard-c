@@ -2,6 +2,7 @@
 
 #include <electionguard/voting/tracker.h>
 
+#include "electionguard/voting/encrypter.h"
 #include "main_params.h"
 #include "main_voting.h"
 
@@ -80,8 +81,8 @@ bool initialize_encrypters(struct joint_public_key joint_key)
     for (uint32_t i = 0; i < NUM_ENCRYPTERS && ok; i++)
     {
         id_buf[0] = i;
-        struct Voting_Encrypter_new_r result =
-            Voting_Encrypter_new(uid, joint_key, NUM_SELECTIONS, BASE_HASH_CODE);
+        struct Voting_Encrypter_new_r result = Voting_Encrypter_new(
+            uid, joint_key, NUM_SELECTIONS, BASE_HASH_CODE);
 
         if (result.status != VOTING_ENCRYPTER_SUCCESS)
             ok = false;
@@ -112,17 +113,31 @@ static bool random_bit() { return 1 & rand(); }
 static void fill_random_ballot(bool *selections)
 {
     bool selected = false;
-    for (uint32_t i = 0; i < NUM_SELECTIONS; i++){
-        if(!selected){
+    for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
+    {
+        if (!selected)
+        {
             selections[i] = random_bit();
         }
-        else{
-            selections[i]=false;
+        else
+        {
+            selections[i] = false;
         }
-        if(selections[i]){
-            selected=true;
+        if (selections[i])
+        {
+            selected = true;
         }
     }
+    if (!selected)
+    {
+        selections[NUM_SELECTIONS - 1] = true;
+    }
+    printf("vote created ");
+    for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
+    {
+        printf("%d ", selections[i]);
+    }
+    printf("\n");
 }
 
 bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
@@ -136,6 +151,11 @@ bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
         bool selections[MAX_SELECTIONS];
 
         fill_random_ballot(selections);
+        if (!Validate_selections(selections, NUM_SELECTIONS))
+        {
+            printf("oops");
+            continue;
+        }
 
         struct register_ballot_message message = {.bytes = NULL};
         struct ballot_tracker tracker = {.bytes = NULL};
@@ -183,11 +203,17 @@ bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
             enum Voting_Coordinator_status status;
 
             if (random_bit())
+            {
                 status =
                     Voting_Coordinator_cast_ballot(coordinator, identifier);
+                printf("Cast\n");
+            }
             else
+            {
                 status =
                     Voting_Coordinator_spoil_ballot(coordinator, identifier);
+                printf("Spoiled\n");
+            }
 
             if (status != VOTING_COORDINATOR_SUCCESS)
                 ok = false;

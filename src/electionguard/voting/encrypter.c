@@ -164,13 +164,27 @@ Voting_Encrypter_Crypto_status_convert(enum Crypto_status status)
     }
 }
 
+bool Validate_selections(bool const *selections, uint32_t num_selections)
+{
+    uint32_t count = 0;
+    for (uint32_t i = 0; i < num_selections; i++)
+    {
+        if (selections[i])
+            count += 1;
+    }
+    return (count == 1) ? true : false;
+}
 struct Voting_Encrypter_encrypt_ballot_r
 Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
                                 bool const *selections)
 {
-    struct Voting_Encrypter_encrypt_ballot_r result;
-    result.status = VOTING_ENCRYPTER_SUCCESS;
 
+    struct Voting_Encrypter_encrypt_ballot_r balotR;
+    balotR.status = VOTING_ENCRYPTER_SUCCESS;
+    // validate selection
+    if (!Validate_selections(selections, encrypter->num_selections))
+        balotR.status = VOTING_ENCRYPTER_SELECTION_ERROR;
+    if (balotR.status == VOTING_ENCRYPTER_SUCCESS)
     // Construct the ballot id
     {
         struct ballot_identifier_rep rep = {.id = Voting_num_ballots};
@@ -187,10 +201,10 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
         Serialize_write_ballot_identifier(&state, &rep);
 
         if (state.status != SERIALIZE_STATE_WRITING)
-            result.status = VOTING_ENCRYPTER_SERIALIZE_ERROR;
+            balotR.status = VOTING_ENCRYPTER_SERIALIZE_ERROR;
         else
         {
-            result.id = (struct ballot_identifier){
+            balotR.id = (struct ballot_identifier){
                 .len = state.len,
                 .bytes = state.buf,
             };
@@ -199,16 +213,16 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
 
     // Construct the message
     struct encrypted_ballot_rep encrypted_ballot;
-    if (result.status == VOTING_ENCRYPTER_SUCCESS)
+    if (balotR.status == VOTING_ENCRYPTER_SUCCESS)
     {
         struct Crypto_encrypted_ballot_new_r result =
             Crypto_encrypted_ballot_new(encrypter->num_selections,
                                         Voting_num_ballots);
         encrypted_ballot = result.result;
-        result.status = Voting_Encrypter_Crypto_status_convert(result.status);
+        balotR.status = Voting_Encrypter_Crypto_status_convert(result.status);
     }
 
-    if (result.status == VOTING_ENCRYPTER_SUCCESS)
+    if (balotR.status == VOTING_ENCRYPTER_SUCCESS)
     {
         struct encryption_rep tally;
         Crypto_encryption_rep_new(&tally);
@@ -239,16 +253,23 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
                                       selections[i],
                                       encrypter->joint_key.public_key,
                                       encrypted_ballot.selections[i], nonce);
-            Crypto_check_dis_proof(
-                encrypted_ballot.dis_proof[i], encrypted_ballot.selections[i],
-                encrypter->base_hash, encrypter->joint_key.public_key);
+            if (!Crypto_check_dis_proof(encrypted_ballot.dis_proof[i],
+                                        encrypted_ballot.selections[i],
+                                        encrypter->base_hash,
+                                        encrypter->joint_key.public_key))
+            {
+                balotR.status = VOTING_ENCRYPTER_UNKNOWN_ERROR;
+            }
         }
         Crypto_generate_aggregate_cp_proof(
             &encrypted_ballot.cp_proof, encrypter->source, aggregate_nonce,
             tally, encrypter->base_hash, encrypter->joint_key.public_key);
-        Crypto_check_aggregate_cp_proof(encrypted_ballot.cp_proof, tally,
-                                        encrypter->base_hash,
-                                        encrypter->joint_key.public_key);
+        if (!Crypto_check_aggregate_cp_proof(encrypted_ballot.cp_proof, tally,
+                                             encrypter->base_hash,
+                                             encrypter->joint_key.public_key))
+        {
+            balotR.status = VOTING_ENCRYPTER_UNKNOWN_ERROR;
+        }
 
         mpz_clear(nonce);
         mpz_clear(aggregate_nonce);
@@ -262,10 +283,10 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
         Serialize_write_encrypted_ballot(&state, &encrypted_ballot);
 
         if (state.status != SERIALIZE_STATE_WRITING)
-            result.status = VOTING_ENCRYPTER_SERIALIZE_ERROR;
+            balotR.status = VOTING_ENCRYPTER_SERIALIZE_ERROR;
         else
         {
-            result.message = (struct register_ballot_message){
+            balotR.message = (struct register_ballot_message){
                 .len = state.len,
                 .bytes = state.buf,
             };
@@ -274,23 +295,23 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
     }
 
     // Construct the ballot tracker
-    if (result.status == VOTING_ENCRYPTER_SUCCESS)
+    if (balotR.status == VOTING_ENCRYPTER_SUCCESS)
     {
         SHA2_CTX context;
         uint8_t *digest_buffer = malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
 
         SHA256Init(&context);
-        SHA256Update(&context, result.message.bytes, result.message.len);
+        SHA256Update(&context, balotR.message.bytes, balotR.message.len);
         SHA256Final(digest_buffer, &context);
 
-        result.tracker = (struct ballot_tracker){
+        balotR.tracker = (struct ballot_tracker){
             .len = SHA256_DIGEST_LENGTH,
             .bytes = digest_buffer,
         };
     }
 
-    if (result.status == VOTING_ENCRYPTER_SUCCESS)
+    if (balotR.status == VOTING_ENCRYPTER_SUCCESS)
         Voting_num_ballots++;
 
-    return result;
+    return balotR;
 }

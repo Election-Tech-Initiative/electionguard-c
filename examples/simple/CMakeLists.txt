@@ -33,13 +33,10 @@ message(STATUS "GMP include dir is: ${GMP_INCLUDE_DIR}")
 message(STATUS "GMP library is: ${GMP_LIBRARY}")
 
 target_link_libraries(simple electionguard gmp)
-<<<<<<< HEAD
-=======
 
 if (WIN32)
     target_link_libraries(simple Bcrypt)
 endif (WIN32)
->>>>>>> 488b7513dc61eb88fa7d7a306300ef07faca79ff
 
 add_test(NAME simple COMMAND simple)
 

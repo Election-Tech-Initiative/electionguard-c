@@ -8,7 +8,7 @@ provided by the SDK. It focuses on specifying and fixing the API so
 programming against the
 header files presented in the include document should allow you to
 develop a voting system that is automatically improved
-as the develoment of the ElectionGuard SDK continues.
+as the development of the ElectionGuard SDK continues.
 
 This repository is pre-release. We look forward to engaging with the elections,
 security, and software engineering communities to continue to improve it as
@@ -258,8 +258,8 @@ Current Limitations
 - Elections configurations are hard-coded. Later versions will be dynamically configurable by JSON input.
 - Proof checks are sanity checks only, they are suitable to double check output from a trustworthy source, but not for a verifier.
 - Election output is not yet structured for JSON output. Future versions will output data that will be compatible with our verifier specifications.
-- We have not yet implemented thresholded decryption, elctions can run with multiple trustees, but all trustees must be present to decrypt.
+- We have not yet implemented thresholded decryption, elections can run with multiple trustees, but all trustees must be present to decrypt.
 - Our build is not currently compatible with Visual Studio
-- The code is tested to be memory safe, however there are known meory leaks, these will be fixed in the next versions
-- Decryption works by loading the entire elction into memory. Due to the size of elctions, this will not be desirable for larger elctions.
+- The code is tested to be memory safe, however there are known memory leaks, these will be fixed in the next versions
+- Decryption works by loading the entire election into memory. Due to the size of elections, this will not be desirable for larger elections.
 - We use a dummy hash for the base hash, when JSON input is enabled, that must feed into the base hash

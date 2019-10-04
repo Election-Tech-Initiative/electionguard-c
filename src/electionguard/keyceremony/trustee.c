@@ -6,6 +6,7 @@
 
 #include <electionguard/keyceremony/trustee.h>
 #include <electionguard/max_values.h>
+#include <electionguard/secure_zero_memory.h>
 
 #include "keyceremony/message_reps.h"
 #include "serialize/keyceremony.h"
@@ -227,9 +228,9 @@ struct KeyCeremony_Trustee_verify_shares_r
 KeyCeremony_Trustee_verify_shares(KeyCeremony_Trustee t,
                                   struct all_shares_received_message in_message)
 {
-    struct KeyCeremony_Trustee_verify_shares_r result = {
-        .status = KEYCEREMONY_TRUSTEE_SUCCESS,
-    };
+    struct KeyCeremony_Trustee_verify_shares_r result;
+    secure_zero_memory(&result, sizeof(struct KeyCeremony_Trustee_verify_shares_r));
+    result.status = KEYCEREMONY_TRUSTEE_SUCCESS;
 
     struct all_shares_received_rep in_message_rep;
 

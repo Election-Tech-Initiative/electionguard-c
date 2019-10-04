@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <electionguard/voting/encrypter.h>
+#include <electionguard/secure_zero_memory.h>
 
 #include "crypto_reps.h"
 #include "random_source.h"
@@ -66,8 +67,14 @@ Voting_Encrypter_new(struct uid uid, struct joint_public_key joint_key,
 
     // Allocate the Encrypter
     result.encrypter = malloc(sizeof(struct Voting_Encrypter_s));
-    if (result.encrypter == NULL)
+    if (result.encrypter != NULL)
+    {
+        secure_zero_memory(result.encrypter, sizeof(struct Voting_Encrypter_s));
+    }
+    else
+    {
         result.status = VOTING_ENCRYPTER_INSUFFICIENT_MEMORY;
+    }
 
     // Clone the uid
     uint8_t *uid_buf = NULL;

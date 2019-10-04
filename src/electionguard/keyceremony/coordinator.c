@@ -5,6 +5,7 @@
 
 #include <electionguard/keyceremony/coordinator.h>
 #include <electionguard/max_values.h>
+#include <electionguard/secure_zero_memory.h>
 
 #include "keyceremony/message_reps.h"
 #include "serialize/crypto.h"
@@ -60,8 +61,9 @@ KeyCeremony_Coordinator_assert_all_seen(KeyCeremony_Coordinator c)
 struct KeyCeremony_Coordinator_new_r
 KeyCeremony_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
 {
-    struct KeyCeremony_Coordinator_new_r result = {
-        .status = KEYCEREMONY_COORDINATOR_SUCCESS};
+    struct KeyCeremony_Coordinator_new_r result;
+    secure_zero_memory(&result, sizeof(struct KeyCeremony_Coordinator_new_r));
+    result.status = KEYCEREMONY_COORDINATOR_SUCCESS;
 
     if (!(1 <= threshold && threshold <= num_trustees &&
           num_trustees <= MAX_TRUSTEES))
@@ -71,8 +73,14 @@ KeyCeremony_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
     if (result.status == KEYCEREMONY_COORDINATOR_SUCCESS)
     {
         result.coordinator = malloc(sizeof(struct KeyCeremony_Coordinator_s));
-        if (result.coordinator == NULL)
+        if (result.coordinator != NULL)
+        {
+            secure_zero_memory(result.coordinator, sizeof(struct KeyCeremony_Coordinator_s));
+        }
+        else
+        {
             result.status = KEYCEREMONY_COORDINATOR_INSUFFICIENT_MEMORY;
+        }
     }
 
     // Initialize the coordinator

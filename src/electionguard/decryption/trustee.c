@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <electionguard/decryption/trustee.h>
+#include <electionguard/secure_zero_memory.h>
 
 #include "crypto_reps.h"
 #include "decryption/message_reps.h"
@@ -56,8 +57,14 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
     if (result.status == DECRYPTION_TRUSTEE_SUCCESS)
     {
         result.decryptor = malloc(sizeof(struct Decryption_Trustee_s));
-        if (result.decryptor == NULL)
+        if (result.decryptor != NULL)
+        {
+            secure_zero_memory(result.decryptor, sizeof(struct Decryption_Trustee_s));
+        }
+        else
+        {
             result.status = DECRYPTION_TRUSTEE_INSUFFICIENT_MEMORY;
+        }
     }
 
     if (result.status == DECRYPTION_TRUSTEE_SUCCESS)

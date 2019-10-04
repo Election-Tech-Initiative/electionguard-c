@@ -5,6 +5,7 @@
 
 #include <electionguard/decryption/coordinator.h>
 #include <electionguard/max_values.h>
+#include <electionguard/secure_zero_memory.h>
 
 #include "decryption/message_reps.h"
 #include "serialize/decryption.h"
@@ -32,8 +33,9 @@ struct Decryption_Coordinator_s
 struct Decryption_Coordinator_new_r
 Decryption_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
 {
-    struct Decryption_Coordinator_new_r result = {
-        .status = DECRYPTION_COORDINATOR_SUCCESS};
+    struct Decryption_Coordinator_new_r result;
+    secure_zero_memory(&result, sizeof(struct Decryption_Coordinator_new_r));
+    result.status = DECRYPTION_COORDINATOR_SUCCESS;
 
     if (!(1 <= threshold && threshold <= num_trustees &&
           num_trustees <= MAX_TRUSTEES))
@@ -43,8 +45,14 @@ Decryption_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
     if (result.status == DECRYPTION_COORDINATOR_SUCCESS)
     {
         result.coordinator = malloc(sizeof(struct Decryption_Coordinator_s));
-        if (result.coordinator == NULL)
+        if (result.coordinator != NULL)
+        {
+            secure_zero_memory(result.coordinator, sizeof(struct Decryption_Coordinator_s));
+        }
+        else
+        {
             result.status = DECRYPTION_COORDINATOR_INSUFFICIENT_MEMORY;
+        }
     }
 
     // Initialize the coordinator

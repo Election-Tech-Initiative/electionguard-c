@@ -51,7 +51,7 @@ bool uintnwords_succ_o(size_t n, UINT4096_WORD_T *out, const UINT4096_WORD_T *a)
     bool carry = true;
     // timing
     while(carry && n-- > 0) {
-        carry = __builtin_add_overflow(a[n], 1, a+n);
+        carry = __builtin_add_overflow(a[n], 1, out+n);
     }
     return carry;
 }

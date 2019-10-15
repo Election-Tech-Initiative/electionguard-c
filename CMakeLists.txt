@@ -78,6 +78,13 @@ endif()
 find_package(GMP REQUIRED)
 target_link_libraries(electionguard ${GMP_LIBRARY})
 
+if (MINGW)
+    # Link BCrypt
+    target_link_libraries(electionguard BCrypt)
+    # Remove lib prefix
+    set_target_properties(electionguard PROPERTIES PREFIX "")
+endif()
+
 # Set the public include directory depending on if the target is being exported
 # or installed
 target_include_directories(electionguard

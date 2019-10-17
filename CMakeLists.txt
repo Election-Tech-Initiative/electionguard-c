@@ -45,6 +45,7 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/sha2-openbsd.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/sha2-openbsd.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/secure_zero_memory.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/trustee_state_rep.h

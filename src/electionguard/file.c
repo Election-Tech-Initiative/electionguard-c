@@ -56,3 +56,9 @@ void File_close(FILE *file)
 {
     fclose(file);
 }
+
+// Seek file to beginning
+void File_seek(FILE *file)
+{
+    int seek_status = fseek(file, 0L, SEEK_SET);
+}

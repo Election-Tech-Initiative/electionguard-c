@@ -9,3 +9,5 @@
 FILE *File_new(char const *template);
 
 void File_close(FILE *file);
+
+void File_seek(FILE *file);

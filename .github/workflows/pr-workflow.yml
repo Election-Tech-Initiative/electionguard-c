@@ -1,0 +1,32 @@
+name: PR Build
+
+on: [pull_request]
+
+jobs:
+  linux_build:
+    name: 'Linux Build'
+    runs-on: 'ubuntu-latest'
+    steps:
+    - uses: actions/checkout@master
+      with:
+        submodules: true
+    - name: Upgrade cmake
+      run: | 
+        sudo mv /usr/local/bin/cmake /usr/local/bin/cmake-old
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 8611B7A28669BB93
+        sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main'
+        sudo apt-get update && sudo apt-get install -y cmake
+        cmake --version
+    - name: Build C Library
+      run: |
+        cmake -S . -B build -DBUILD_SHARED_LIBS=ON
+        cmake --build build
+    - name: 'Build Simple Election'
+      run: | 
+        ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/simple -B simple_build
+        cmake --build simple_build --target simple
+    - name: 'Test Simple Election'
+      run: | 
+        cd simple_build
+        ./simple
+      

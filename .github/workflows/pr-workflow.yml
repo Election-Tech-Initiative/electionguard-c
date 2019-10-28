@@ -19,6 +19,7 @@ jobs:
         cmake --version
     - name: Build C Library
       run: |
+        cmake --version
         cmake -S . -B build -DBUILD_SHARED_LIBS=ON
         cmake --build build
     - name: 'Build Simple Election'
@@ -29,4 +30,62 @@ jobs:
       run: | 
         cd simple_build
         ./simple
-      
+  windows_build:
+    name: 'Windows Build'
+    runs-on: 'windows-latest'
+    steps:
+    - uses: actions/checkout@master
+      with:
+        submodules: true
+    - name: Install msys2
+      run: |
+        set MSYS_PATH=%CD%\temp\msys2
+        choco install msys2 --params="/InstallDir:%MSYS_PATH% /NoPath" -y
+        echo "::add-path::%MSYS_PATH%\usr\bin"
+        echo "::add-path::%MSYS_PATH%"
+    - name: Install gcc & gmp
+      run: | 
+        pacman --noconfirm -Syu
+        pacman --noconfirm -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gmp make
+    - name: Build C Library
+      run: |
+        cmake --version
+        cmake -S . -B build -G "MSYS Makefiles" -DBUILD_SHARED_LIBS=ON
+        cmake --build build
+    # Skip Windows Simple Build - Fails due to ElectionGuard_DIR
+    - name: 'Build Simple Election'
+      if: false
+      run: | 
+        setx ElectionGuard_DIR "%CD%/build/ElectionGuard"
+        cmake -S examples/simple -B simple_build -G "MSYS Makefiles"
+        cmake --build simple_build --target simple
+    - name: 'Test Simple Election'
+      if: false
+      run: | 
+        cd simple_build
+        ./simple
+  macos_build:
+    name: 'MacOS Build'
+    runs-on: 'macOS-latest'
+    steps:
+    - uses: actions/checkout@master
+      with:
+        submodules: true
+    - name: Install gmp
+      run: brew install gmp
+    - name: Build C Library
+      run: |
+        cmake --version
+        cmake -S . -B build -DBUILD_SHARED_LIBS=ON
+        cmake --build build
+    # Skip MacOS Simple Build - Fails due to -lgmp
+    - name: 'Build Simple Election'
+      if: false
+      run: | 
+        ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/simple -B simple_build
+        cmake --build simple_build --target simple
+    - name: 'Test Simple Election'
+      if: false
+      run: | 
+        cd simple_build
+        ./simple

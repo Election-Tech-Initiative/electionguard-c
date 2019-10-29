@@ -15,6 +15,7 @@ enum Voting_Encrypter_status
     VOTING_ENCRYPTER_SERIALIZE_ERROR,
     VOTING_ENCRYPTER_DESERIALIZE_ERROR,
     VOTING_ENCRYPTER_IO_ERROR,
+    VOTING_ENCRYPTER_SELECTION_ERROR,
     // It is a bug for the SDK to produce one of these.
     VOTING_ENCRYPTER_UNKNOWN_ERROR
 };
@@ -68,5 +69,6 @@ struct Voting_Encrypter_encrypt_ballot_r
     struct ballot_tracker tracker;
     struct ballot_identifier id;
 };
+bool Validate_selections(bool const *selections, uint32_t num_selections);
 
 #endif /* __VOTING_ENCRYPTER_H__ */

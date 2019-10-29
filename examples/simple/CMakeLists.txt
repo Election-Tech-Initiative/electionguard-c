@@ -22,6 +22,8 @@ add_executable(simple
     ${PROJECT_SOURCE_DIR}/main_voting.c
     ${PROJECT_SOURCE_DIR}/main_keyceremony.h
     ${PROJECT_SOURCE_DIR}/main_decryption.h
+    ${PROJECT_SOURCE_DIR}/main_rsa.h
+    ${PROJECT_SOURCE_DIR}/main_rsa.c
 )
 
 

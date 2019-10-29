@@ -3,21 +3,87 @@
 #include <assert.h>
 #include <stdlib.h>
 
+void Serialize_reserve_uint64_ts(struct serialize_state *state,
+                                 const_uint4096 data, int ct)
+{
+    for (uint32_t i = 0; i < ct; i++)
+        Serialize_reserve_uint64(state, NULL);
+}
+
+void Serialize_write_uint64_ts(struct serialize_state *state, const mpz_t data,
+                               int ct)
+{
+    uint64_t *tmp = export_to_64_t(data, ct);
+    for (uint32_t i = 0; i < ct; i++)
+    {
+        Serialize_write_uint64(state, &tmp[i]);
+    }
+    free(tmp);
+}
+
+void Serialize_write_uint64_ts_pad(struct serialize_state *state, const mpz_t data,
+                               int ct)
+{
+    uint64_t *tmp = export_to_64_t_pad(data, ct);
+    for (uint32_t i = 0; i < ct; i++)
+    {
+        Serialize_write_uint64(state, &tmp[i]);
+    }
+    free(tmp);
+}
+
+void Serialize_read_uint64_ts(struct serialize_state *state, mpz_t data, int ct)
+{
+    uint64_t *tmp = malloc(sizeof(uint64_t) * ct);
+    for (uint32_t i = 0; i < ct; i++)
+    {
+        Serialize_read_uint64(state, &tmp[i]);
+    }
+    import_uint64_ts(data, tmp, ct);
+    free(tmp);
+}
+
 void Serialize_reserve_uint4096(struct serialize_state *state,
                                 const_uint4096 data)
 {
-    for (uint32_t i = 0; i < UINT4096_WORD_COUNT; i++)
-        Serialize_reserve_uint64(state, NULL);
+    Serialize_reserve_uint64_ts(state, data, UINT4096_WORD_COUNT);
 }
 
 void Serialize_write_uint4096(struct serialize_state *state, const mpz_t data)
 {
-    uint4096 tmp = export_to_uint4096(data);
+    Serialize_write_uint64_ts(state, data, UINT4096_WORD_COUNT);
+}
+
+void Serialize_read_uint4096(struct serialize_state *state, mpz_t data)
+{
+    uint4096 tmp = malloc(sizeof(struct uint4096_s));
     for (uint32_t i = 0; i < UINT4096_WORD_COUNT; i++)
     {
-        Serialize_write_uint64(state, &tmp->words[i]);
+        Serialize_read_uint64(state, &tmp->words[i]);
     }
+    import_uint4096(data, tmp);
     free(tmp);
+}
+
+void Serialize_reserve_uint256(struct serialize_state *state,
+                                const_uint4096 data)
+{
+    Serialize_reserve_uint64_ts(state, data, 4);
+}
+
+void Serialize_write_uint256(struct serialize_state *state, const mpz_t data)
+{
+    Serialize_write_uint64_ts(state, data, 4);
+}
+
+void Serialize_write_uint256_pad(struct serialize_state *state, const mpz_t data)
+{
+    Serialize_write_uint64_ts_pad(state, data, 4);
+}
+
+void Serialize_read_uint256(struct serialize_state *state, mpz_t data)
+{
+    Serialize_read_uint64_ts(state, data, 4);
 }
 
 void Serialize_reserve_hash(struct serialize_state *state)
@@ -78,18 +144,6 @@ uint8_t *Serialize_reserve_write_bignum(mpz_t in)
     return state.buf;
 }
 
-void Serialize_read_uint4096(struct serialize_state *state, mpz_t data)
-{
-    uint4096 tmp = malloc(sizeof(struct uint4096_s));
-    for (uint32_t i = 0; i < UINT4096_WORD_COUNT; i++)
-    {
-        Serialize_read_uint64(state, &tmp->words[i]);
-    }
-    import_uint4096(data, tmp);
-    free(tmp);
-    // TODO: check that the value is in the right range??
-}
-
 void Serialize_reserve_private_key(struct serialize_state *state,
                                    struct private_key const *data)
 {
@@ -130,7 +184,7 @@ void Serialize_reserve_schnorr_proof(struct serialize_state *state,
     Serialize_reserve_hash(state); //challenge
     for (int i = 0; i < data->threshold; i++)
     {
-        Serialize_reserve_uint4096(state, NULL); //challenge_responses
+        Serialize_reserve_uint256(state, NULL); //challenge_responses
     }
 }
 
@@ -146,7 +200,7 @@ void Serialize_write_schnorr_proof(struct serialize_state *state,
     Serialize_write_hash(state, data->challenge);
     for (int i = 0; i < data->threshold; i++)
     {
-        Serialize_write_uint4096(
+        Serialize_write_uint256(
             state, data->challenge_responses[i]); //challenge_responses
     }
 }
@@ -156,14 +210,14 @@ void Serialize_read_schnorr_proof(struct serialize_state *state,
 {
     Serialize_read_uint32(state, &data->threshold);
 
-    for (int i = 0; i < data->threshold; i++)
+    for (uint32_t i = 0; i < data->threshold; i++)
     {
         Serialize_read_uint4096(state, data->commitments[i]);
     }
     Serialize_read_hash(state, &data->challenge);
-    for (int i = 0; i < data->threshold; i++)
+    for (uint32_t i = 0; i < data->threshold; i++)
     {
-        Serialize_read_uint4096(
+        Serialize_read_uint256(
             state, data->challenge_responses[i]); //challenge_responses
     }
 }
@@ -199,25 +253,75 @@ void Serialize_read_public_key(struct serialize_state *state,
     Serialize_read_schnorr_proof(state, &data->proof);
 }
 
+void Serialize_reserve_rsa_public_key(struct serialize_state *state,
+                                      rsa_public_key const *data)
+{ // serialize reverse rsa private key
+    Serialize_reserve_uint64_ts(state, NULL, 64);
+    Serialize_reserve_uint64_ts(state, NULL, 1); //e is 3, so this is overkill
+}
+
+void Serialize_write_rsa_public_key(struct serialize_state *state,
+                                    rsa_public_key const *data)
+{
+    // serialize write rsa private key
+    Serialize_write_uint64_ts(state, data->n, 64);
+    Serialize_write_uint64_ts(state, data->e, 1);
+}
+
+void Serialize_read_rsa_public_key(struct serialize_state *state,
+                                   rsa_public_key *data)
+{ // serialize rsa private key
+    Serialize_read_uint64_ts(state, data->n, 64);
+    Serialize_read_uint64_ts(state, data->e, 1);
+}
+
+void Serialize_reserve_rsa_private_key(struct serialize_state *state,
+                                       rsa_private_key const *data)
+{ // serialize reverse rsa private key
+    Serialize_reserve_uint64_ts(state, NULL, 1);
+    Serialize_reserve_uint64_ts(state, NULL, 32);
+    Serialize_reserve_uint64_ts(state, NULL, 64);
+    Serialize_reserve_uint64_ts(state, NULL, 32);
+    Serialize_reserve_uint64_ts(state, NULL, 64);
+}
+
+void Serialize_write_rsa_private_key(struct serialize_state *state,
+                                     rsa_private_key const *data)
+{
+    // serialize write rsa private key
+    Serialize_write_uint64_ts(state, data->e, 1);
+    Serialize_write_uint64_ts(state, data->q, 32);
+    Serialize_write_uint64_ts(state, data->d, 64);
+    Serialize_write_uint64_ts(state, data->p, 32);
+    Serialize_write_uint64_ts(state, data->n, 64);
+}
+
+void Serialize_read_rsa_private_key(struct serialize_state *state,
+                                    rsa_private_key *data)
+{
+    Serialize_read_uint64_ts(state, data->e, 1);
+    Serialize_read_uint64_ts(state, data->q, 32);
+    Serialize_read_uint64_ts(state, data->d, 64);
+    Serialize_read_uint64_ts(state, data->p, 32);
+    Serialize_read_uint64_ts(state, data->n, 64);
+}
+
 void Serialize_reserve_encrypted_key_share(
     struct serialize_state *state, struct encrypted_key_share const *data)
 {
-    Serialize_reserve_private_key(state, &data->private_key);
-    Serialize_reserve_public_key(state, &data->recipient_public_key);
+    Serialize_reserve_uint64_ts(state, NULL, 12);
 }
 
 void Serialize_write_encrypted_key_share(struct serialize_state *state,
                                          struct encrypted_key_share const *data)
 {
-    Serialize_write_private_key(state, &data->private_key);
-    Serialize_write_public_key(state, &data->recipient_public_key);
+    Serialize_write_uint64_ts(state, data->encrypted, 12);
 }
 
 void Serialize_read_encrypted_key_share(struct serialize_state *state,
                                         struct encrypted_key_share *data)
 {
-    Serialize_read_private_key(state, &data->private_key);
-    Serialize_read_public_key(state, &data->recipient_public_key);
+    Serialize_read_uint64_ts(state, data->encrypted, 12);
 }
 
 void Serialize_reserve_joint_public_key(struct serialize_state *state,

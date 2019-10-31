@@ -1,5 +1,31 @@
 # Contributing
 
+* [Getting Started](#getting-started)
+* [Pull Requests](#pull-requests)
+* [Contributor License Agreement](#contributor-license-agreement)
+* [Code of Conduct](#code-of-conduct)
+* [Developer's Certificate of Origin 1.1](#developers-certificate-of-origin)
+
+
+## Getting Started
+
+If new to the project, 
+1. Review the [Technical Specification](https://github.com/microsoft/ElectionGuard-SDK-Specification)
+2. Install according to [ReadMe](./README.rst)
+OR
+refer to [Documentation](https://electionguard.github.io/ElectionGuard-SDK-C-Documentation/)
+3. Once you're up and running, be sure to run the simple election test
+
+⚠ Note: If you get stuck, take a look at our [GitHub Action](./.github/workflows/pr-workflow.yml)
+
+## Pull Requests
+
+Before submitting a pull request, [rebase](https://www.atlassian.com/git/tutorials/merging-vs-rebasing) your branch from master. Do not use ``git merge`` or the *merge* button provided by Github.
+
+Ensure your pull request is [referencing at least one issue](https://help.github.com/en/github/managing-your-work-on-github/closing-issues-using-keywords) and following PR template.
+
+## [Contributor License Agreement](https://cla.opensource.microsoft.com)
+
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
 the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
@@ -8,11 +34,12 @@ When you submit a pull request, a CLA bot will automatically determine whether y
 a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
 provided by the bot. You will only need to do this once across all repos using our CLA.
 
+## [Code of Conduct](CODE_OF_CONDUCT.md)
+
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
-<a id="developers-certificate-of-origin"></a>
 ## Developer's Certificate of Origin 1.1
 
 By making a contribution to this project, I certify that:

@@ -1,5 +1,12 @@
-ElectionGuard SDK C Implementation
+🗳️ ElectionGuard SDK C Implementation
 =====================================
+
+|Build| |License|
+
+.. |Build| image:: https://github.com/microsoft/ElectionGuard-SDK-C-Implementation/workflows/Build/badge.svg
+
+.. |License| image:: https://img.shields.io/github/license/microsoft/ElectionGuard-SDK-C-Implementation.svg
+   :target: https://github.com/microsoft/ElectionGuard-SDK-C-Implementation/blob/master/LICENSE
 
 This is the core SDK that performs election functions such as vote encryption, decryption, key generation, and tallying. This code is meant to be run on voting system hardware and to be integrated into existing (or new) voting system software. The ElectionGuard SDK is written in C and is meant to add end-to-end verifiability and encryption into 3rd party comprehensive voting systems. There is also a simplistic, proof-of-concept C application to understand how the API should be called.
 
@@ -262,3 +269,8 @@ Current Limitations
 - Decryption works by loading the entire election into memory. Due to the size of elections, this will not be desirable for larger elections.
 - We use a dummy hash for the base hash, when JSON input is enabled, that must feed into the base hash
 - We use RSA for sharing key-shares. Ideally ElGamal would be used, however it requires different parameters than the rest of the election.
+
+Contributing
+------------------
+
+Help defend democracy and `contribute to the project <CONTRIBUTING.md>`_.

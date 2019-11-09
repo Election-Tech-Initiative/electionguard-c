@@ -7,7 +7,7 @@
     4. Reopen the MSYS2 prompt and run:
 
             pacman -Syu
-            pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gmp make
+            pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gmp mingw-w64-x86_64-cmake make
 
         (Yes, you should run `pacman -Syu` a second time.)
 
@@ -19,21 +19,16 @@
     1. Open a command prompt and navigate to the directory with the vendor-sdk repo.
     2. Run the following commands:
 
-            mkdir build
-            cd build
-            cmake -G "MSYS Makefiles" ..
-            make
+            cmake -S . -B build -G "MSYS Makefiles" ..
+            cmake --build build
 
-    3. You should now have a `libelectionguard.a`.
+    3. You should now have a `electionguard.a` or `electionguard.dll` (depending on the how cmake was configured).
 3. (Optional) Build the simple example election driver.
     1. Open a command prompt and navigate to the directory with the vendor-sdk repo.
     2. Run the following commands:
 
-            cd examples\simple
-            mkdir build
-            cd build
             set CMAKE_PREFIX_PATH=C:\path\to\vendor-sdk\build\ElectionGuard
-            cmake -G "MSYS Makefiles" ..
-            make
+            cmake -S examples/simple -B simple_build -G "MSYS Makefiles"
+            cmake --build simple_build --target simple
 
     3. You should now have a `simple.exe` that simulates some random voters and generates election record artifacts.

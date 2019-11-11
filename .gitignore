@@ -32,4 +32,4 @@ CTestTestfile.cmake
 _deps
 
 ElectionGuardConfig.cmake
-simple.exe
+simple_build/

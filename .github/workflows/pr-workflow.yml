@@ -49,7 +49,7 @@ jobs:
     - name: Install gcc and gmp
       run: |
         pacman --noconfirm -Syu
-        pacman --noconfirm -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gmp make
+        pacman --noconfirm -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gmp
     - name: Build C Library
       run: |
         cmake --version

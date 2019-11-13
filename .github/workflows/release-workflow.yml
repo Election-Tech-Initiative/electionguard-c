@@ -1,8 +1,8 @@
 name: Build
 
-on: 
-  milestone:
-    types: [closed]
+on:
+   milestone:
+     types: [closed]
 
 jobs:
   linux_build:
@@ -22,16 +22,13 @@ jobs:
     - name: Build C Library
       run: |
         cmake --version
-        cmake -S . -B build
+        cmake -S . -B build -DBUILD_SHARED_LIBS=ON
         cmake --build build
-    - name: 'Build Simple Election'
-      run: | 
-        ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/simple -B simple_build
-        cmake --build simple_build --target simple
-    - name: 'Test Simple Election'
-      run: | 
-        cd simple_build
-        ./simple
+    - name: Upload Shared Library
+      uses: actions/upload-artifact@v1
+      with:
+        name: libelectionguard.so
+        path: build/libelectionguard.so
   windows_build:
     name: 'Windows Build'
     runs-on: 'windows-latest'
@@ -51,22 +48,17 @@ jobs:
     - name: Install gcc and gmp
       run: |
         pacman --noconfirm -Syu
-        pacman --noconfirm -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gmp make
+        pacman --noconfirm -S mingw-w64-x86_64-gcc mingw-w64-x86_64-gmp
     - name: Build C Library
       run: |
         cmake --version
-        cmake -S . -B build -G "MSYS Makefiles"
+        cmake -S . -B build -G "MSYS Makefiles" -DBUILD_SHARED_LIBS=ON
         cmake --build build
-    - name: 'Build Simple Election'
-      run: |
-        $env:CMAKE_PREFIX_PATH="./build/ElectionGuard"
-        cmake -S examples/simple -B simple_build -G "MSYS Makefiles"
-        cmake --build simple_build --target simple
-    - name: 'Test Simple Election'
-      run: | 
-        cd simple_build
-        $outcome = Invoke-Expression ".\simple.exe"
-        echo $outcome
+    - name: Upload Shared Library
+      uses: actions/upload-artifact@v1
+      with:
+        name: electionguard.dll
+        path: build/electionguard.dll
   macos_build:
     name: 'MacOS Build'
     runs-on: 'macOS-latest'
@@ -82,13 +74,53 @@ jobs:
     - name: Build C Library
       run: |
         cmake --version
-        cmake -S . -B build
+        cmake -S . -B build -DBUILD_SHARED_LIBS=ON
         cmake --build build
-    - name: 'Build Simple Election'
-      run: | 
-        ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/simple -B simple_build
-        cmake --build simple_build --target simple
-    - name: 'Test Simple Election'
-      run: | 
-        cd simple_build
-        ./simple
+    - name: Upload Shared Library
+      uses: actions/upload-artifact@v1
+      with:
+        name: libelectionguard.dylib
+        path: build/libelectionguard.dylib
+  release:
+    name: Upload Release
+    needs: [linux_build, windows_build, macos_build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_name: Milestone Release
+          tag_name: v1.0.0
+          draft: true
+          prerelease: false
+      - name: Get Linux Artifact
+        uses: actions/download-artifact@master
+        with:
+          name: libelectionguard.so
+      - name: Get Windows Artifact
+        uses: actions/download-artifact@master
+        with:
+          name: electionguard.dll
+      - name: Get MacOS Artifact
+        uses: actions/download-artifact@master
+        with:
+          name: libelectionguard.dylib
+      - name: Zip Artifacts
+        run: |
+          zip -r electionguard.zip .
+      - name: Display Artifacts
+        run: ls
+      - name: Upload Linux Artifact
+        id: upload-release-asset_1
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./electionguard.zip
+          asset_name: electionguard.zip
+          asset_content_type: application/zip
+  

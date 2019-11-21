@@ -8,7 +8,7 @@
 #include <stdlib.h>
 //#define DEBUG_PRINT =0
 
-/* LGTM TEST - Do not PR */
+/* LGTM TEST - Do not PR * /
 int LgtmAlertExample01(int i)
 {
     int intArray[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};

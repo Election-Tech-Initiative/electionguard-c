@@ -14,13 +14,7 @@
 #include "main_rsa.h"
 #include "main_voting.h"
 
-/** Semmle Test ***/
-void printWrapper(char *str) 
-{ 
-	printf(str); 
-}
-
-/* LGTM TEST - Do not PR */
+/* LGTM TEST - Do not PR * /
 int LgtmAlertExample01(int i)
 {
     int intArray[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
@@ -55,14 +49,8 @@ uint32_t const DECRYPTING_TRUSTEES = 2;
 raw_hash BASE_HASH_CODE = {0, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                            0, 0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-/* LGTM Test - Do not accept PR! */
-int main(int argc, char **argv)
+int main()
 {
-    // This should be avoided too, because it has the same effect
-    printWrapper(argv[1]);
-
-/* LGTM Test - Do not accept PR! */
-
 	// Seed the RNG that we use to generate arbitrary ballots. This
     // relies on the fact that the current implementation of the
     // cryptography does not rely on the built in RNG.

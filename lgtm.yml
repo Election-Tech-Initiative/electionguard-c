@@ -7,7 +7,7 @@ extraction:
       - mkdir $LGTM_SRC/_lgtm_build_dir
       - cd $LGTM_SRC/_lgtm_build_dir
     index:
-      - build_command:
+      build_command:
       - cmake --version
       - cmake -S . -B build
       - cmake --build build

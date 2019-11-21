@@ -1,3 +1,6 @@
+#ifndef __BUILTINS_H__
+#define __BUILTINS_H__ 
+
 #include <stdbool.h>
 
 #include "serialize/state.h"
@@ -30,3 +33,5 @@ void Serialize_write_uint64(struct serialize_state *state,
                             uint64_t const *data);
 
 void Serialize_read_uint64(struct serialize_state *state, uint64_t *data);
+
+#endif /* __BUILTINS_H__ */

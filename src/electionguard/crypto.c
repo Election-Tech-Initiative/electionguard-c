@@ -8,8 +8,6 @@
 #include <stdlib.h>
 //#define DEBUG_PRINT =0
 
-// Testing Semmle PR
-
 void Crypto_hash_final(struct hash *out, SHA2_CTX *context)
 {
     uint8_t bytes[HASH_DIGEST_SIZE_BYTES];

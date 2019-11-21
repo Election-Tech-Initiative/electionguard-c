@@ -14,7 +14,7 @@
 #include "main_rsa.h"
 #include "main_voting.h"
 
-/* LGTM TEST - Do not PR * /
+/* LGTM TEST - Do not PR */
 int LgtmAlertExample01(int i)
 {
     int intArray[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};

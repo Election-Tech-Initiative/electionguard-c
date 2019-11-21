@@ -20,6 +20,17 @@ void printWrapper(char *str)
 	printf(str); 
 }
 
+/* LGTM TEST - Do not PR */
+int LgtmAlertExample01(int i)
+{
+    int intArray[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    int *intPointer = intArray;
+    // BAD: the offset is already automatically scaled by sizeof(int),
+    // so this code will compute the wrong offset.
+    return *(intPointer + (i * sizeof(int)));
+}
+/* LGTM TEST - Do not PR */
+
 /** Create a new temporary file from a template. */
 static FILE *fmkstemps(char const *template, const char *mode);
 

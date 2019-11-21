@@ -8,6 +8,17 @@
 #include <stdlib.h>
 //#define DEBUG_PRINT =0
 
+/* LGTM TEST - Do not PR */
+int LgtmAlertExample01(int i)
+{
+    int intArray[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    int *intPointer = intArray;
+    // BAD: the offset is already automatically scaled by sizeof(int),
+    // so this code will compute the wrong offset.
+    return *(intPointer + (i * sizeof(int)));
+}
+/* LGTM TEST - Do not PR */
+
 void Crypto_hash_final(struct hash *out, SHA2_CTX *context)
 {
     uint8_t bytes[HASH_DIGEST_SIZE_BYTES];

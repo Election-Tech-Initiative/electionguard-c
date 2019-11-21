@@ -6,3 +6,11 @@ extraction:
       - export PATH=$(pwd)/custom_cmake/bin:${PATH}
       - mkdir $LGTM_SRC/_lgtm_build_dir
       - cd $LGTM_SRC/_lgtm_build_dir
+      - export ElectionGuard_DIR=$(pwd)/build/ElectionGuard
+    index:    
+      build_command:
+      - cmake --version
+      - cmake -S . -B build
+      - cmake --build build
+      - cmake -S examples/simple -B simple_build 
+      - cmake --build simple_build --target simple

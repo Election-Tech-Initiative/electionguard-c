@@ -57,7 +57,7 @@ struct KeyCeremony_Trustee_new_r KeyCeremony_Trustee_new(uint32_t num_trustees,
         result.trustee->index = index;
 
         Crypto_private_key_init(&result.trustee->private_key, threshold);
-        for (uint32_t i = 0; i < threshold; i++)
+        for (uint32_t i = 0; i < num_trustees; i++)
         {
             Crypto_public_key_new(&result.trustee->public_keys[i], threshold);
         }

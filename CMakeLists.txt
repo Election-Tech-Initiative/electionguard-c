@@ -12,6 +12,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 add_library(electionguard
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/base_hash.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/create_election.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto_reps.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/coordinator.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/num_ballots.h
@@ -51,6 +53,8 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/trustee_state_rep.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/file.c
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/config.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/create_election.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/file.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/max_values.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/trustee_state.h

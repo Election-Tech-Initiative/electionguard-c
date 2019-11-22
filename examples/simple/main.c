@@ -7,9 +7,9 @@
 #endif
 
 #include <electionguard/max_values.h>
+#include <electionguard/api/create_election.h>
 
 #include "main_decryption.h"
-#include "main_keyceremony.h"
 #include "main_params.h"
 #include "main_rsa.h"
 #include "main_voting.h"
@@ -45,15 +45,21 @@ int main()
     // cryptography does not rely on the built in RNG.
     srand(100);
 
-    Crypto_parameters_new();
+    struct api_config config = {
+        .num_trustees = NUM_TRUSTEES,
+        .threshold = THRESHOLD,
+        .subgroup_order = 0,
+        .election_meta = "placeholder"
+    };
 
-    // Outputs of the key ceremony
+    // Outputs of the key ceremony (+ joint_key from return value)
     struct trustee_state trustee_states[MAX_TRUSTEES];
-    struct joint_public_key joint_key;
 
     // Key Ceremony
 
-    bool ok = key_ceremony(&joint_key, trustee_states);
+    struct joint_public_key joint_key = API_CreateElection(config, trustee_states);
+
+    bool ok = joint_key.bytes != NULL;
 
     // Open the voting results file
     FILE *voting_results = NULL;
@@ -70,6 +76,8 @@ int main()
         if (voting_results == NULL)
             ok = false;
     }
+
+    Crypto_parameters_new();
 
     // Voting
     if (ok)

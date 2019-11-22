@@ -91,7 +91,10 @@ void force_memset(void *ptr, size_t len) {
  * <machine/endian.h> where the appropriate definitions are actually
  * made).
  */
+#if !defined(BYTE_ORDER) 
 #define BYTE_ORDER LITTLE_ENDIAN
+#endif
+
 #if !defined(BYTE_ORDER) || (BYTE_ORDER != LITTLE_ENDIAN && BYTE_ORDER != BIG_ENDIAN)
 #error Define BYTE_ORDER to be equal to either LITTLE_ENDIAN or BIG_ENDIAN
 #endif

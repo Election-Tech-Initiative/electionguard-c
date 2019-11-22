@@ -345,7 +345,7 @@ void computeTrusteePolynomial(mpz_t out,                      //out
     mpz_inits(t_1, t_2, i_t, index_t, NULL);
     mpz_set_ui(index_t, index);
     mpz_set_ui(out,0);
-    for (uint32_t i = 0; i <= upperBound; i++)
+    for (uint32_t i = 0; i < upperBound; i++)
     {
         mpz_set_ui(i_t, i);
         pow_mod_q(t_1, index_t, i_t);

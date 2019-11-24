@@ -7,9 +7,9 @@
 #endif
 
 #include <electionguard/max_values.h>
-#include <electionguard/api/create_election.h>
 
 #include "main_decryption.h"
+#include "main_keyceremony.h"
 #include "main_params.h"
 #include "main_rsa.h"
 #include "main_voting.h"
@@ -45,21 +45,15 @@ int main()
     // cryptography does not rely on the built in RNG.
     srand(100);
 
-    struct api_config config = {
-        .num_trustees = NUM_TRUSTEES,
-        .threshold = THRESHOLD,
-        .subgroup_order = 0,
-        .election_meta = "placeholder"
-    };
+    Crypto_parameters_new();
 
-    // Outputs of the key ceremony (+ joint_key from return value)
+    // Outputs of the key ceremony
     struct trustee_state trustee_states[MAX_TRUSTEES];
+    struct joint_public_key joint_key;
 
     // Key Ceremony
 
-    struct joint_public_key joint_key = API_CreateElection(config, trustee_states);
-
-    bool ok = joint_key.bytes != NULL;
+    bool ok = key_ceremony(&joint_key, trustee_states);
 
     // Open the voting results file
     FILE *voting_results = NULL;
@@ -76,8 +70,6 @@ int main()
         if (voting_results == NULL)
             ok = false;
     }
-
-    Crypto_parameters_new();
 
     // Voting
     if (ok)
@@ -120,9 +112,20 @@ int main()
         tally = NULL;
     }
 
-    Crypto_parameters_free();
+    for (uint32_t i = 0; i < NUM_TRUSTEES; i++)
+        if (trustee_states[i].bytes != NULL)
+        {
+            free((void *)trustee_states[i].bytes);
+            trustee_states[i].bytes = NULL;
+        }
 
-    API_CreateElection_free(joint_key, trustee_states);
+    if (joint_key.bytes != NULL)
+    {
+        free((void *)joint_key.bytes);
+        joint_key.bytes = NULL;
+    }
+
+    Crypto_parameters_free();
 
     if (ok)
         return EXIT_SUCCESS;

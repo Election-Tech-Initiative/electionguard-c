@@ -120,20 +120,9 @@ int main()
         tally = NULL;
     }
 
-    for (uint32_t i = 0; i < NUM_TRUSTEES; i++)
-        if (trustee_states[i].bytes != NULL)
-        {
-            free((void *)trustee_states[i].bytes);
-            trustee_states[i].bytes = NULL;
-        }
-
-    if (joint_key.bytes != NULL)
-    {
-        free((void *)joint_key.bytes);
-        joint_key.bytes = NULL;
-    }
-
     Crypto_parameters_free();
+
+    API_CreateElection_free(joint_key, trustee_states);
 
     if (ok)
         return EXIT_SUCCESS;

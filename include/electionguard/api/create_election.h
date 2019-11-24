@@ -12,4 +12,8 @@ Perform the key ceremony, return joint key and assign the trustee_states in the 
 struct joint_public_key API_CreateElection(struct api_config config,
                                            struct trustee_state *trustee_states);
 
+/* Free the bytes allocated by CreateElection */
+void API_CreateElection_free(struct joint_public_key joint_key,
+                             struct trustee_state *trustee_states);                                         
+
 #endif /* __API_CREATE_ELECTION_H__ */

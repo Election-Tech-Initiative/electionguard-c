@@ -131,6 +131,25 @@ struct joint_public_key API_CreateElection(struct api_config config,
     return joint_key;
 }
 
+void API_CreateElection_free(struct joint_public_key joint_key,
+                             struct trustee_state *trustee_states)
+{
+    for (uint32_t i = 0; i < api_config.num_trustees; i++)
+    {
+        if (trustee_states[i].bytes != NULL)
+        {
+            free((void *)trustee_states[i].bytes);
+            trustee_states[i].bytes = NULL;
+        }
+    }
+
+    if (joint_key.bytes != NULL)
+    {
+        free((void *)joint_key.bytes);
+        joint_key.bytes = NULL;
+    }
+}                                                            
+
 bool initialize_coordinator(void)
 {
     bool ok = true;

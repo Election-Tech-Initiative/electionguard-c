@@ -40,7 +40,7 @@ struct joint_public_key API_CreateElection(struct api_config config,
 
     bool ok = true;
 
-    struct joint_public_key joint_key = (struct joint_public_key){.bytes = NULL};
+    struct joint_public_key joint_key = {.bytes = NULL};
 
     // Set global variables
 

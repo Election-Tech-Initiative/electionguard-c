@@ -5,6 +5,7 @@
 
 struct api_config
 {
+    uint32_t num_selections;
     uint32_t num_trustees;
     uint32_t threshold;
     uint32_t subgroup_order;

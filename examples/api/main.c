@@ -35,7 +35,8 @@ int main()
         .num_trustees = NUM_TRUSTEES,
         .threshold = THRESHOLD,
         .subgroup_order = 0,
-        .election_meta = "placeholder"
+        .election_meta = "placeholder",
+        .joint_key = {.bytes = NULL},
     };
 
     // Create Election
@@ -43,10 +44,7 @@ int main()
     printf("\n--- Create Election ---\n");
 
     struct trustee_state trustee_states[MAX_TRUSTEES];
-    struct joint_public_key joint_key = API_CreateElection(config, trustee_states);
-    
-    if (joint_key.bytes == NULL)
-        ok = false;
+    ok = API_CreateElection(&config, trustee_states);
 
     for (uint32_t i = 0; i < NUM_TRUSTEES && ok; i++) {
         if (trustee_states[i].bytes == NULL)
@@ -64,15 +62,15 @@ int main()
             bool selections[MAX_SELECTIONS];
             fill_random_ballot(selections);
 
-            struct API_EncryptBallot_results encrypt_ballot_results =
-                API_EncryptBallot(selections, config, joint_key, &current_num_ballots);
+            struct API_EncryptBallot_result encrypt_ballot_result =
+                API_EncryptBallot(selections, config, &current_num_ballots);
 
-            if (encrypt_ballot_results.message.bytes == NULL ||
-                encrypt_ballot_results.tracker_string == NULL) {
+            if (encrypt_ballot_result.message.bytes == NULL ||
+                encrypt_ballot_result.tracker_string == NULL) {
                 ok = false;
             } else {
                 // Print id and tracker
-                printf("Ballot id: %lu\n%s\n", encrypt_ballot_results.identifier, encrypt_ballot_results.tracker_string);
+                printf("Ballot id: %lu\n%s\n", encrypt_ballot_result.identifier, encrypt_ballot_result.tracker_string);
             }
             // TODO: store encrypted ballot and id for next step
         }

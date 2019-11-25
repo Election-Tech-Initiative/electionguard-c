@@ -30,23 +30,21 @@ static struct api_config api_config;
 static KeyCeremony_Coordinator coordinator;
 static KeyCeremony_Trustee trustees[MAX_TRUSTEES];
 
-struct joint_public_key API_CreateElection(struct api_config config,
-                                           struct trustee_state *trustee_states)
+bool API_CreateElection(struct api_config *config,
+                        struct trustee_state *trustee_states)
 {
 #ifdef DEBUG_PRINT
     printf("API_CreateElection::Config:\n\tnum_trustees: %d\n\tthreshold: %d\n\tsubgroup_order: %d\n\telection_meta: %s\n",
-            config.num_trustees, config.threshold, config.subgroup_order, config.election_meta);
+            config->num_trustees, config->threshold, config->subgroup_order, config->election_meta);
 #endif
 
     bool ok = true;
 
-    struct joint_public_key joint_key = {.bytes = NULL};
-
     // Set global variables
 
     Crypto_parameters_new();
-    api_config = config;
-    create_base_hash_code(config);
+    api_config = *config;
+    create_base_hash_code(api_config);
 
     // Initialize
 
@@ -93,8 +91,8 @@ struct joint_public_key API_CreateElection(struct api_config config,
 
     if (ok)
     {
-        joint_key = publish_joint_key();
-        if (joint_key.bytes == NULL)
+        config->joint_key = publish_joint_key();
+        if (config->joint_key.bytes == NULL)
             ok = false;
     }
 
@@ -128,7 +126,7 @@ struct joint_public_key API_CreateElection(struct api_config config,
 
     Crypto_parameters_free();
 
-    return joint_key;
+    return ok;
 }
 
 void API_CreateElection_free(struct joint_public_key joint_key,

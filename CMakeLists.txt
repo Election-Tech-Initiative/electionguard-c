@@ -147,6 +147,15 @@ add_test(NAME build_simple
         --test-command simple
 )
 
+add_test(NAME build_api
+   COMMAND "${CMAKE_COMMAND}"
+      -E env ElectionGuard_DIR=${CMAKE_CURRENT_BINARY_DIR}/ElectionGuard
+      "${CMAKE_CTEST_COMMAND}"
+        --build-and-test "${PROJECT_SOURCE_DIR}/examples/api" "${CMAKE_CURRENT_BINARY_DIR}/api_build"
+        --build-generator ${CMAKE_GENERATOR}
+        --test-command api
+)
+
 include(CheckIncludeFiles)
 check_include_files("windows.h;bcrypt.h" HAVE_BCRYPTGENRANDOM)
 configure_file(${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h.in ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h)

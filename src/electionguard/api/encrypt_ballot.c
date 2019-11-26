@@ -12,13 +12,14 @@ static bool initialize_encrypter(struct joint_public_key joint_key);
 static struct api_config api_config;
 static Voting_Encrypter encrypter;
 
-struct API_EncryptBallot_result API_EncryptBallot(bool const *selections,
-                                                  struct api_config config,
-                                                  uint64_t *current_num_ballots)
+bool API_EncryptBallot(bool const *selections,
+                       struct api_config config,
+                       uint64_t *current_num_ballots,
+                       uint64_t *identifier,
+                       struct register_ballot_message *encrypted_ballot_message,
+                       char **tracker_string)
 {
     bool ok = true;
-
-    struct API_EncryptBallot_result encrypt_ballot_result;
     
     // Set global variables
 
@@ -51,7 +52,7 @@ struct API_EncryptBallot_result API_EncryptBallot(bool const *selections,
             ok = false;
         else
         {
-            encrypt_ballot_result.message = result.message;
+            *encrypted_ballot_message = result.message;
 
             // Deserialize the id to get its ulong representation
             struct ballot_identifier_rep id_rep;
@@ -62,10 +63,10 @@ struct API_EncryptBallot_result API_EncryptBallot(bool const *selections,
                 .buf = (uint8_t *)result.id.bytes,
             };
             Serialize_read_ballot_identifier(&state, &id_rep);
-            encrypt_ballot_result.identifier = id_rep.id;
+            *identifier = id_rep.id;
             
             // Convert tracker to string represntation
-            encrypt_ballot_result.tracker_string = display_ballot_tracker(result.tracker);
+            *tracker_string = display_ballot_tracker(result.tracker);
 
             // Voting_Encrypter_encrypt_ballot will increment the global Voting_num_ballots.
             // Update the *current_num_ballots param to have new value tracked by caller
@@ -92,7 +93,7 @@ struct API_EncryptBallot_result API_EncryptBallot(bool const *selections,
 
     Crypto_parameters_free();
 
-    return encrypt_ballot_result;
+    return ok;
 }
 
 void API_EncryptBallot_free(struct register_ballot_message message,

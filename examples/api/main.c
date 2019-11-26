@@ -61,16 +61,15 @@ int main()
             
             bool selections[MAX_SELECTIONS];
             fill_random_ballot(selections);
+            uint64_t ballotId;
+            struct register_ballot_message encrypted_ballot_message;
+            char *tracker;
 
-            struct API_EncryptBallot_result encrypt_ballot_result =
-                API_EncryptBallot(selections, config, &current_num_ballots);
+            ok = API_EncryptBallot(selections, config, &current_num_ballots, &ballotId, &encrypted_ballot_message, &tracker);
 
-            if (encrypt_ballot_result.message.bytes == NULL ||
-                encrypt_ballot_result.tracker_string == NULL) {
-                ok = false;
-            } else {
+            if (ok) {
                 // Print id and tracker
-                printf("Ballot id: %lu\n%s\n", encrypt_ballot_result.identifier, encrypt_ballot_result.tracker_string);
+                printf("Ballot id: %lu\n%s\n", ballotId, tracker);
             }
             // TODO: store encrypted ballot and id for next step
         }

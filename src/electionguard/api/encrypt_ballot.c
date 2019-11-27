@@ -95,7 +95,10 @@ bool API_EncryptBallot(uint16_t *selections_short,
     }
 
     if (encrypter != NULL)
+    {
         Voting_Encrypter_free(encrypter);
+        encrypter = NULL;
+    }
 
     Crypto_parameters_free();
 

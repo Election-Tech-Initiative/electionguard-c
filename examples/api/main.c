@@ -6,11 +6,13 @@
 #include <io.h>
 #endif
 
-#include <electionguard/max_values.h>
 #include <electionguard/api/create_election.h>
 #include <electionguard/api/encrypt_ballot.h>
+#include <electionguard/api/record_ballots.h>
+#include <electionguard/max_values.h>
 
-void fill_random_ballot(bool *selections);
+static bool random_bit();
+static void fill_random_ballot(bool *selections);
 
 // Election Parameters
 uint32_t const NUM_TRUSTEES = 3;
@@ -40,13 +42,14 @@ int main()
     };
 
     // Create Election
-    
+
     printf("\n--- Create Election ---\n");
 
     struct trustee_state trustee_states[MAX_TRUSTEES];
     ok = API_CreateElection(&config, trustee_states);
 
-    for (uint32_t i = 0; i < NUM_TRUSTEES && ok; i++) {
+    for (uint32_t i = 0; i < NUM_TRUSTEES && ok; i++)
+    {
         if (trustee_states[i].bytes == NULL)
             ok = false;
     }
@@ -54,26 +57,84 @@ int main()
     // Encrypt Ballots
 
     printf("\n--- Encrypt Ballots ---\n");
+    
+    struct register_ballot_message encrypted_ballots[NUM_RANDOM_BALLOT_SELECTIONS];
+    uint64_t ballot_identifiers[NUM_RANDOM_BALLOT_SELECTIONS];
 
-    if (ok) {
+    if (ok)
+    {
         uint64_t current_num_ballots = 0;
-        for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++) {
-            
+        for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
+        {
+
             bool selections[MAX_SELECTIONS];
             fill_random_ballot(selections);
             uint64_t ballotId;
             struct register_ballot_message encrypted_ballot_message;
             char *tracker;
 
-            ok = API_EncryptBallot(selections, config, &current_num_ballots, &ballotId, &encrypted_ballot_message, &tracker);
+            ok = API_EncryptBallot(selections, config, &current_num_ballots,
+                                   &ballotId, &encrypted_ballot_message,
+                                   &tracker);
 
-            if (ok) {
+            if (ok)
+            {
+                encrypted_ballots[i] = encrypted_ballot_message;
+                ballot_identifiers[i] = ballotId;
+
                 // Print id and tracker
                 printf("Ballot id: %lu\n%s\n", ballotId, tracker);
             }
-            // TODO: store encrypted ballot and id for next step
         }
     }
+
+    // Register & Record Cast/Spoil Multiple Ballots
+
+    printf("\n--- Randomly Assigning Ballots to be Cast or Spoil Arrays ---\n");
+
+    uint32_t current_cast_index = 0;
+    uint32_t current_spoiled_index = 0;
+    uint64_t casted_ballot_ids[NUM_RANDOM_BALLOT_SELECTIONS];
+    uint64_t spoiled_ballot_ids[NUM_RANDOM_BALLOT_SELECTIONS];
+
+    for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
+    {
+        if (random_bit())
+        {
+            casted_ballot_ids[current_cast_index] = ballot_identifiers[i];
+            current_cast_index++;
+
+            printf("Cast Ballot Id: %lu\n", ballot_identifiers[i]);
+        }
+        else
+        {
+            spoiled_ballot_ids[current_spoiled_index] = ballot_identifiers[i];
+            current_spoiled_index++;
+
+            printf("Spoil Ballot Id: %lu\n", ballot_identifiers[i]);
+        }
+    }
+
+    if ((current_cast_index + current_spoiled_index) != NUM_RANDOM_BALLOT_SELECTIONS)
+        ok = false;
+
+    printf("\n--- Record Ballots (Register, Cast, and Spoil) ---\n");
+
+    if (ok)
+    {
+        // Assigning an output_path fails if this folder doesn't already exist
+        char *output_path = "../"; // This outputs to the directy above the cwd.
+        char *output_prefix = "eg-";
+        ok = API_RecordBallots(config.num_selections, current_cast_index, current_spoiled_index,
+                NUM_RANDOM_BALLOT_SELECTIONS, casted_ballot_ids, spoiled_ballot_ids, encrypted_ballots,
+                output_path, output_prefix);
+                
+        if (ok)
+            printf("Ballots registration and recording of cast/spoil successful!\nCheck output path \"%s\" for files starting with \"%s\"\n",
+                output_path, output_prefix);
+    }
+
+    // Cleanup
 
     if (ok)
         return EXIT_SUCCESS;
@@ -81,7 +142,7 @@ int main()
         return EXIT_FAILURE;
 }
 
-static bool random_bit() { return 1 & rand(); }
+bool random_bit() { return 1 & rand(); }
 
 void fill_random_ballot(bool *selections)
 {

@@ -27,7 +27,7 @@
     1. Open a command prompt and navigate to the directory with the vendor-sdk repo.
     2. Run the following commands:
 
-            set CMAKE_PREFIX_PATH=C:\path\to\vendor-sdk\build\ElectionGuard
+            $env:CMAKE_PREFIX_PATH="C:\path\to\vendor-sdk\build\ElectionGuard"
             cmake -S examples/simple -B simple_build -G "MSYS Makefiles"
             cmake --build simple_build --target simple
 

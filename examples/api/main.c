@@ -9,6 +9,7 @@
 #include <electionguard/api/create_election.h>
 #include <electionguard/api/encrypt_ballot.h>
 #include <electionguard/api/record_ballots.h>
+#include <electionguard/api/tally_votes.h>
 #include <electionguard/max_values.h>
 
 static bool random_bit();
@@ -60,6 +61,7 @@ int main()
     
     struct register_ballot_message encrypted_ballots[NUM_RANDOM_BALLOT_SELECTIONS];
     uint64_t ballot_identifiers[NUM_RANDOM_BALLOT_SELECTIONS];
+    char *ballot_trackers[NUM_RANDOM_BALLOT_SELECTIONS];
 
     if (ok)
     {
@@ -81,6 +83,7 @@ int main()
             {
                 encrypted_ballots[i] = encrypted_ballot_message;
                 ballot_identifiers[i] = ballotId;
+                ballot_trackers[i] = tracker;
 
                 // Print id and tracker
                 printf("Ballot id: %lu\n%s\n", ballotId, tracker);
@@ -135,7 +138,30 @@ int main()
                 ballots_filename);
     }
 
+    // Tally Votes & Decrypt Results
+
+    printf("\n--- Tally & Decrypt Votes ---\n");
+
+    char *tally_filename;
+    if (ok)
+    {
+        char *output_path = "../"; // This outputs to the directy above the cwd.
+        char *output_prefix = "tally-";
+        ok = API_TallyVotes(config, trustee_states, DECRYPTING_TRUSTEES,
+                ballots_filename, output_path, output_prefix, &tally_filename);
+
+        if (ok)
+            printf("Tally from ballots input successful!\nCheck output file \"%s\"\n",
+                tally_filename);
+    }
+
     // Cleanup
+
+    API_TallyVotes_free(tally_filename);
+    API_RecordBallots_free(ballots_filename);
+    for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
+        API_EncryptBallot_free(encrypted_ballots[i], ballot_trackers[i]);
+    API_CreateElection_free(config.joint_key, trustee_states);
 
     if (ok)
         return EXIT_SUCCESS;

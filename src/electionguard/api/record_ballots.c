@@ -9,7 +9,7 @@
 
 static bool initialize_coordinator(uint32_t num_selections);
 static bool get_serialized_ballot_identifier(int64_t ballot_id, struct ballot_identifier *ballot_identifier);
-static bool export_ballots(char *export_path, char *filename_prefix);
+static bool export_ballots(char *export_path, char *filename_prefix, char **output_filename);
 
 // Global state
 static Voting_Coordinator coordinator;
@@ -22,7 +22,8 @@ bool API_RecordBallots(uint32_t num_selections,
                        uint64_t *spoil_ids,
                        struct register_ballot_message *encrypted_ballots,
                        char *export_path,
-                       char *filename_prefix)
+                       char *filename_prefix,
+                       char **output_filename)
 {
     bool ok = true;
     
@@ -111,7 +112,7 @@ bool API_RecordBallots(uint32_t num_selections,
     // Export
     
     if (ok)
-        ok = export_ballots(export_path, filename_prefix);
+        ok = export_ballots(export_path, filename_prefix, output_filename);
 
     // Clean up
 
@@ -124,6 +125,12 @@ bool API_RecordBallots(uint32_t num_selections,
     Crypto_parameters_free();
 
     return ok;
+}
+
+void API_RecordBallots_free(char *output_filename)
+{
+    if (output_filename != NULL)
+        free(output_filename);
 }
 
 bool initialize_coordinator(uint32_t num_selections)
@@ -171,19 +178,19 @@ bool get_serialized_ballot_identifier(int64_t ballot_id, struct ballot_identifie
     return ok;
 }
 
-bool export_ballots(char *export_path, char *filename_prefix)
+bool export_ballots(char *export_path, char *filename_prefix, char **output_filename)
 {
     bool ok = true;
     char *default_prefix = "electionguard_ballots-";
-    char unique_filename[FILENAME_MAX];
-    ok = generate_unique_filename(export_path, filename_prefix, default_prefix, unique_filename);   
+    *output_filename = malloc(FILENAME_MAX * sizeof(char));
+    ok = generate_unique_filename(export_path, filename_prefix, default_prefix, *output_filename);   
 #ifdef DEBUG_PRINT 
-    printf("API_RecordBallots :: generated unique filename for export at \"%s\"\n", unique_filename);
+    printf("API_RecordBallots :: generated unique filename for export at \"%s\"\n", *output_filename);
 #endif
 
     if (ok)
     {
-        FILE *out = fopen(unique_filename, "w+");
+        FILE *out = fopen(*output_filename, "w+");
         
         enum Voting_Coordinator_status status =
             Voting_Coordinator_export_ballots(coordinator, out);

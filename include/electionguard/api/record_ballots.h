@@ -16,6 +16,11 @@ bool API_RecordBallots(uint32_t num_selections,
                        uint64_t *spoil_ids,
                        struct register_ballot_message *encrypted_ballots,
                        char *export_path,
-                       char *filename_prefix);                         
+                       char *filename_prefix,
+                       char **output_filename);                         
+
+/**
+ * Free the bytes allocated by RecordBallots */
+void API_RecordBallots_free(char *output_filename);    
 
 #endif /* __API_RECORD_BALLOTS_H__ */

@@ -12,7 +12,7 @@
 #include <electionguard/max_values.h>
 
 static bool random_bit();
-static void fill_random_ballot(bool *selections);
+static void fill_random_ballot(uint16_t *selections);
 
 // Election Parameters
 uint32_t const NUM_TRUSTEES = 3;
@@ -67,7 +67,7 @@ int main()
         for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
         {
 
-            bool selections[MAX_SELECTIONS];
+            uint16_t selections[MAX_SELECTIONS];
             fill_random_ballot(selections);
             uint64_t ballotId;
             struct register_ballot_message encrypted_ballot_message;
@@ -120,18 +120,19 @@ int main()
 
     printf("\n--- Record Ballots (Register, Cast, and Spoil) ---\n");
 
+    char *ballots_filename;
     if (ok)
     {
         // Assigning an output_path fails if this folder doesn't already exist
         char *output_path = "../"; // This outputs to the directy above the cwd.
-        char *output_prefix = "eg-";
+        char *output_prefix = "ballots-";
         ok = API_RecordBallots(config.num_selections, current_cast_index, current_spoiled_index,
                 NUM_RANDOM_BALLOT_SELECTIONS, casted_ballot_ids, spoiled_ballot_ids, encrypted_ballots,
-                output_path, output_prefix);
+                output_path, output_prefix, &ballots_filename);
                 
         if (ok)
-            printf("Ballots registration and recording of cast/spoil successful!\nCheck output path \"%s\" for files starting with \"%s\"\n",
-                output_path, output_prefix);
+            printf("Ballot registrations and recording of cast/spoil successful!\nCheck output file \"%s\"\n",
+                ballots_filename);
     }
 
     // Cleanup
@@ -144,27 +145,27 @@ int main()
 
 bool random_bit() { return 1 & rand(); }
 
-void fill_random_ballot(bool *selections)
+void fill_random_ballot(uint16_t *selections)
 {
-    bool selected = false;
+    uint16_t selected = 0;
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {
         if (!selected)
         {
-            selections[i] = random_bit();
+            selections[i] = random_bit() ? 1 : 0;
         }
         else
         {
-            selections[i] = false;
+            selections[i] = 0;
         }
         if (selections[i])
         {
-            selected = true;
+            selected = 1;
         }
     }
     if (!selected)
     {
-        selections[NUM_SELECTIONS - 1] = true;
+        selections[NUM_SELECTIONS - 1] = 1;
     }
     printf("vote created ");
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)

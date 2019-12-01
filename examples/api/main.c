@@ -13,7 +13,7 @@
 #include <electionguard/max_values.h>
 
 static bool random_bit();
-static void fill_random_ballot(uint16_t *selections);
+static void fill_random_ballot(uint8_t *selections);
 
 // Election Parameters
 uint32_t const NUM_TRUSTEES = 3;
@@ -69,7 +69,7 @@ int main()
         for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
         {
 
-            uint16_t selections[MAX_SELECTIONS];
+            uint8_t selections[MAX_SELECTIONS];
             fill_random_ballot(selections);
             uint64_t ballotId;
             struct register_ballot_message encrypted_ballot_message;
@@ -171,9 +171,9 @@ int main()
 
 bool random_bit() { return 1 & rand(); }
 
-void fill_random_ballot(uint16_t *selections)
+void fill_random_ballot(uint8_t *selections)
 {
-    uint16_t selected = 0;
+    uint8_t selected = 0;
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {
         if (!selected)

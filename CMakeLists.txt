@@ -10,6 +10,12 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_C_EXTENSIONS OFF)
 
 add_library(electionguard
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/base_hash.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/filename.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/create_election.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/encrypt_ballot.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/record_ballots.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/tally_votes.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto_reps.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/coordinator.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/num_ballots.h
@@ -49,6 +55,11 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/trustee_state_rep.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/file.c
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/config.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/create_election.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/encrypt_ballot.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/record_ballots.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/tally_votes.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/file.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/max_values.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/trustee_state.h
@@ -137,6 +148,15 @@ add_test(NAME build_simple
         --build-and-test "${PROJECT_SOURCE_DIR}/examples/simple" "${CMAKE_CURRENT_BINARY_DIR}/simple_build"
         --build-generator ${CMAKE_GENERATOR}
         --test-command simple
+)
+
+add_test(NAME build_api
+   COMMAND "${CMAKE_COMMAND}"
+      -E env ElectionGuard_DIR=${CMAKE_CURRENT_BINARY_DIR}/ElectionGuard
+      "${CMAKE_CTEST_COMMAND}"
+        --build-and-test "${PROJECT_SOURCE_DIR}/examples/api" "${CMAKE_CURRENT_BINARY_DIR}/api_build"
+        --build-generator ${CMAKE_GENERATOR}
+        --test-command api
 )
 
 include(CheckIncludeFiles)

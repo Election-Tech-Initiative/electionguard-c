@@ -6,11 +6,14 @@
 #include <io.h>
 #endif
 
-#include <electionguard/max_values.h>
 #include <electionguard/api/create_election.h>
 #include <electionguard/api/encrypt_ballot.h>
+#include <electionguard/api/record_ballots.h>
+#include <electionguard/api/tally_votes.h>
+#include <electionguard/max_values.h>
 
-void fill_random_ballot(bool *selections);
+static bool random_bit();
+static void fill_random_ballot(uint8_t *selections);
 
 // Election Parameters
 uint32_t const NUM_TRUSTEES = 3;
@@ -40,13 +43,14 @@ int main()
     };
 
     // Create Election
-    
+
     printf("\n--- Create Election ---\n");
 
     struct trustee_state trustee_states[MAX_TRUSTEES];
     ok = API_CreateElection(&config, trustee_states);
 
-    for (uint32_t i = 0; i < NUM_TRUSTEES && ok; i++) {
+    for (uint32_t i = 0; i < NUM_TRUSTEES && ok; i++)
+    {
         if (trustee_states[i].bytes == NULL)
             ok = false;
     }
@@ -54,26 +58,110 @@ int main()
     // Encrypt Ballots
 
     printf("\n--- Encrypt Ballots ---\n");
+    
+    struct register_ballot_message encrypted_ballots[NUM_RANDOM_BALLOT_SELECTIONS];
+    uint64_t ballot_identifiers[NUM_RANDOM_BALLOT_SELECTIONS];
+    char *ballot_trackers[NUM_RANDOM_BALLOT_SELECTIONS];
 
-    if (ok) {
+    if (ok)
+    {
         uint64_t current_num_ballots = 0;
-        for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++) {
-            
-            bool selections[MAX_SELECTIONS];
+        for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
+        {
+
+            uint8_t selections[MAX_SELECTIONS];
             fill_random_ballot(selections);
             uint64_t ballotId;
             struct register_ballot_message encrypted_ballot_message;
             char *tracker;
 
-            ok = API_EncryptBallot(selections, config, &current_num_ballots, &ballotId, &encrypted_ballot_message, &tracker);
+            ok = API_EncryptBallot(selections, config, &current_num_ballots,
+                                   &ballotId, &encrypted_ballot_message,
+                                   &tracker);
 
-            if (ok) {
+            if (ok)
+            {
+                encrypted_ballots[i] = encrypted_ballot_message;
+                ballot_identifiers[i] = ballotId;
+                ballot_trackers[i] = tracker;
+
                 // Print id and tracker
                 printf("Ballot id: %lu\n%s\n", ballotId, tracker);
             }
-            // TODO: store encrypted ballot and id for next step
         }
     }
+
+    // Register & Record Cast/Spoil Multiple Ballots
+
+    printf("\n--- Randomly Assigning Ballots to be Cast or Spoil Arrays ---\n");
+
+    uint32_t current_cast_index = 0;
+    uint32_t current_spoiled_index = 0;
+    uint64_t casted_ballot_ids[NUM_RANDOM_BALLOT_SELECTIONS];
+    uint64_t spoiled_ballot_ids[NUM_RANDOM_BALLOT_SELECTIONS];
+
+    for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
+    {
+        if (random_bit())
+        {
+            casted_ballot_ids[current_cast_index] = ballot_identifiers[i];
+            current_cast_index++;
+
+            printf("Cast Ballot Id: %lu\n", ballot_identifiers[i]);
+        }
+        else
+        {
+            spoiled_ballot_ids[current_spoiled_index] = ballot_identifiers[i];
+            current_spoiled_index++;
+
+            printf("Spoil Ballot Id: %lu\n", ballot_identifiers[i]);
+        }
+    }
+
+    if ((current_cast_index + current_spoiled_index) != NUM_RANDOM_BALLOT_SELECTIONS)
+        ok = false;
+
+    printf("\n--- Record Ballots (Register, Cast, and Spoil) ---\n");
+
+    char *ballots_filename;
+    if (ok)
+    {
+        // Assigning an output_path fails if this folder doesn't already exist
+        char *output_path = "../"; // This outputs to the directy above the cwd.
+        char *output_prefix = "ballots-";
+        ok = API_RecordBallots(config.num_selections, current_cast_index, current_spoiled_index,
+                NUM_RANDOM_BALLOT_SELECTIONS, casted_ballot_ids, spoiled_ballot_ids, encrypted_ballots,
+                output_path, output_prefix, &ballots_filename);
+                
+        if (ok)
+            printf("Ballot registrations and recording of cast/spoil successful!\nCheck output file \"%s\"\n",
+                ballots_filename);
+    }
+
+    // Tally Votes & Decrypt Results
+
+    printf("\n--- Tally & Decrypt Votes ---\n");
+
+    char *tally_filename;
+    if (ok)
+    {
+        char *output_path = "../"; // This outputs to the directy above the cwd.
+        char *output_prefix = "tally-";
+        ok = API_TallyVotes(config, trustee_states, DECRYPTING_TRUSTEES,
+                ballots_filename, output_path, output_prefix, &tally_filename);
+
+        if (ok)
+            printf("Tally from ballots input successful!\nCheck output file \"%s\"\n",
+                tally_filename);
+    }
+
+    // Cleanup
+
+    API_TallyVotes_free(tally_filename);
+    API_RecordBallots_free(ballots_filename);
+    for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
+        API_EncryptBallot_free(encrypted_ballots[i], ballot_trackers[i]);
+    API_CreateElection_free(config.joint_key, trustee_states);
 
     if (ok)
         return EXIT_SUCCESS;
@@ -81,29 +169,29 @@ int main()
         return EXIT_FAILURE;
 }
 
-static bool random_bit() { return 1 & rand(); }
+bool random_bit() { return 1 & rand(); }
 
-void fill_random_ballot(bool *selections)
+void fill_random_ballot(uint8_t *selections)
 {
-    bool selected = false;
+    uint8_t selected = 0;
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {
         if (!selected)
         {
-            selections[i] = random_bit();
+            selections[i] = random_bit() ? 1 : 0;
         }
         else
         {
-            selections[i] = false;
+            selections[i] = 0;
         }
         if (selections[i])
         {
-            selected = true;
+            selected = 1;
         }
     }
     if (!selected)
     {
-        selections[NUM_SELECTIONS - 1] = true;
+        selections[NUM_SELECTIONS - 1] = 1;
     }
     printf("vote created ");
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)

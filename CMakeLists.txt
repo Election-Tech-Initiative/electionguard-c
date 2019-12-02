@@ -13,8 +13,11 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/base_hash.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/filename.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/create_election.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/encrypt_ballot.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/record_ballots.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/tally_votes.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto_reps.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/coordinator.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/num_ballots.h
@@ -57,6 +60,8 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/config.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/create_election.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/encrypt_ballot.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/record_ballots.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/tally_votes.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/file.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/max_values.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/trustee_state.h

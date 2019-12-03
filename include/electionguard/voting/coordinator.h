@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include <electionguard/voting/messages.h>
+#include <electionguard/voting/tracker.h>
 
 // @todo jwaksbaum What sort of assurances do we make about the
 // machine being shut off? How does it persist votes?
@@ -60,6 +61,10 @@ Voting_Coordinator_cast_ballot(Voting_Coordinator coordinator,
 enum Voting_Coordinator_status
 Voting_Coordinator_spoil_ballot(Voting_Coordinator coordinator,
                                 struct ballot_identifier ballot_id);
+
+/** Get the tracker string for the given ballot_id */
+char *Voting_Coordinator_get_tracker(Voting_Coordinator coordinator,
+                                     struct ballot_identifier ballot_id);
 
 /***************************** EXPORTING BALLOTS ******************************/
 

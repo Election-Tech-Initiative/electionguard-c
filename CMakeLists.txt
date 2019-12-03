@@ -57,6 +57,8 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/trustee_state_rep.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/file.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/directory.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/directory.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/config.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/create_election.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/encrypt_ballot.h

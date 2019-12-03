@@ -128,7 +128,7 @@ int main()
     if (ok)
     {
         // Assigning an output_path fails if this folder doesn't already exist
-        char *output_path = "../"; // This outputs to the directy above the cwd.
+        char *output_path = "./ballots/"; // This outputs to the directy above the cwd.
         char *output_prefix = "ballots-";
         ok = API_RecordBallots(config.num_selections, current_cast_index, current_spoiled_index,
                 NUM_RANDOM_BALLOT_SELECTIONS, casted_ballot_ids, spoiled_ballot_ids, encrypted_ballots,
@@ -146,7 +146,7 @@ int main()
     char *tally_filename;
     if (ok)
     {
-        char *output_path = "../"; // This outputs to the directy above the cwd.
+        char *output_path = "./tallies/"; // This outputs to the directy above the cwd.
         char *output_prefix = "tally-";
         ok = API_TallyVotes(config, trustee_states, DECRYPTING_TRUSTEES,
                 ballots_filename, output_path, output_prefix, &tally_filename);

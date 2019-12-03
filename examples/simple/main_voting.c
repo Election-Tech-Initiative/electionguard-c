@@ -110,7 +110,7 @@ bool initialize_coordinator(void)
 
 static bool random_bit() { return 1 & rand(); }
 
-static void fill_random_ballot(bool *selections)
+static int32_t fill_random_ballot(bool *selections)
 {
     uint32_t selected_count = 0;
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
@@ -126,18 +126,14 @@ static void fill_random_ballot(bool *selections)
         }
     }
 
-    // ensure we dont have all trues or all falses
-    if (selected_count == NUM_SELECTIONS)
-        selections[0] = 0;
-    else if (selected_count == 0)
-        selections[0] = 1;
-
     printf("vote created ");
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {
         printf("%d ", selections[i]);
     }
     printf("\n");
+
+    return selected_count;
 }
 
 bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
@@ -150,7 +146,9 @@ bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
     {
         bool selections[MAX_SELECTIONS];
 
-        fill_random_ballot(selections);
+        // we're assuming that the returned number of true selections for this ballot
+        // is the the correct expected number for this ballot style in order to encrypt it
+        uint32_t num_selected = fill_random_ballot(selections);
 
         struct register_ballot_message message = {.bytes = NULL};
         struct ballot_tracker tracker = {.bytes = NULL};
@@ -160,7 +158,7 @@ bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
         if (ok)
         {
             struct Voting_Encrypter_encrypt_ballot_r result =
-                Voting_Encrypter_encrypt_ballot(encrypter, selections);
+                Voting_Encrypter_encrypt_ballot(encrypter, selections, num_selected);
 
             if (result.status != VOTING_ENCRYPTER_SUCCESS)
                 ok = false;

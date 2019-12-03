@@ -41,9 +41,6 @@ raw_hash BASE_HASH_CODE = {0, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
 int main()
 {
-    // Seed the RNG that we use to generate arbitrary ballots. This
-    // relies on the fact that the current implementation of the
-    // cryptography does not rely on the built in RNG.
     srand(time(NULL));
 
     Crypto_parameters_new();

@@ -7,7 +7,7 @@ jobs:
     name: 'Linux Build'
     runs-on: 'ubuntu-latest'
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
       with:
         submodules: true
     - name: Upgrade cmake
@@ -34,7 +34,7 @@ jobs:
     name: 'Windows Build'
     runs-on: 'windows-latest'
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
       with:
         submodules: true
     - name: Install msys
@@ -69,7 +69,7 @@ jobs:
     name: 'MacOS Build'
     runs-on: 'macOS-latest'
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
       with:
         submodules: true
     - name: Install gmp

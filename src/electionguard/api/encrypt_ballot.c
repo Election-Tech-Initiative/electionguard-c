@@ -36,9 +36,6 @@ bool API_EncryptBallot(uint8_t *selections_byte_array,
         selections[i] = selections_byte_array[i] == 1;
     }
 
-    if (!Validate_selections(selections, config.num_selections))
-        ok = false;
-
     // Initialize Encrypter
 
     if (ok)

@@ -19,7 +19,7 @@ static void fill_random_ballot(uint8_t *selections);
 uint32_t const NUM_TRUSTEES = 3;
 uint32_t const THRESHOLD = 2;
 uint32_t const NUM_ENCRYPTERS = 3;
-uint32_t const NUM_SELECTIONS = 3;
+uint32_t const NUM_SELECTIONS = 6;
 uint32_t const DECRYPTING_TRUSTEES = 2;
 uint32_t const NUM_RANDOM_BALLOT_SELECTIONS = 6;
 
@@ -173,26 +173,9 @@ bool random_bit() { return 1 & rand(); }
 
 void fill_random_ballot(uint8_t *selections)
 {
-    uint8_t selected = 0;
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
-    {
-        if (!selected)
-        {
-            selections[i] = random_bit() ? 1 : 0;
-        }
-        else
-        {
-            selections[i] = 0;
-        }
-        if (selections[i])
-        {
-            selected = 1;
-        }
-    }
-    if (!selected)
-    {
-        selections[NUM_SELECTIONS - 1] = 1;
-    }
+        selections[i] = random_bit() ? 1 : 0;
+
     printf("vote created ");
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {

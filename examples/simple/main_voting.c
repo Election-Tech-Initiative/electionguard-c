@@ -151,11 +151,6 @@ bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
         bool selections[MAX_SELECTIONS];
 
         fill_random_ballot(selections);
-        if (!Validate_selections(selections, NUM_SELECTIONS))
-        {
-            printf("oops");
-            continue;
-        }
 
         struct register_ballot_message message = {.bytes = NULL};
         struct ballot_tracker tracker = {.bytes = NULL};

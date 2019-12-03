@@ -9,6 +9,14 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 set(CMAKE_C_EXTENSIONS OFF)
 
+message("Generated with config types: ${CMAKE_CONFIGURATION_TYPES}")
+
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+    message("setting DEBUG_PRINT")
+    add_compile_definitions(DEBUG_PRINT)
+ENDIF()
+
+
 add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/base_hash.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/filename.c

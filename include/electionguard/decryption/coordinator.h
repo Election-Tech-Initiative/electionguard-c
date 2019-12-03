@@ -95,6 +95,7 @@ Decryption_Coordinator_receive_fragments(Decryption_Coordinator c,
 */
 enum Decryption_Coordinator_status
 Decryption_Coordinator_all_fragments_received(Decryption_Coordinator c,
-                                              FILE *out);
+                                              FILE *out,
+                                              uint32_t *tally_results_array);
 
 #endif

@@ -16,7 +16,8 @@ static bool tally_ballots(char *in_ballots_filename);
 static bool decrypt_tally_shares(uint32_t num_decrypting_trustees);
 static bool decrypt_tally_decryption_fragments(
     bool *requests_present, struct decryption_fragments_request *requests);
-static bool export_tally_votes(char *export_path, char *filename_prefix, char **output_filename);
+static bool export_tally_votes(char *export_path, char *filename_prefix,
+                               char **output_filename, uint32_t *tally_results_array);
 
 // Global state
 static struct api_config api_config;
@@ -29,7 +30,8 @@ bool API_TallyVotes(struct api_config config,
                     char *ballots_filename, 
                     char *export_path,
                     char *filename_prefix,
-                    char **output_filename)
+                    char **output_filename,
+                    uint32_t *tally_results_array)
 {
     bool ok = true;
 
@@ -78,7 +80,7 @@ bool API_TallyVotes(struct api_config config,
         ok = decrypt_tally_decryption_fragments(request_present, requests);
 
     if (ok)
-        ok = export_tally_votes(export_path, filename_prefix, output_filename);
+        ok = export_tally_votes(export_path, filename_prefix, output_filename, tally_results_array);
 
     // Cleanup
 
@@ -255,7 +257,8 @@ bool decrypt_tally_decryption_fragments(
     return ok;
 }
 
-bool export_tally_votes(char *export_path, char *filename_prefix, char **output_filename)
+bool export_tally_votes(char *export_path, char *filename_prefix,
+                        char **output_filename, uint32_t *tally_results_array)
 {
     bool ok = true;
     char *default_prefix = "electionguard_tally-";
@@ -274,7 +277,7 @@ bool export_tally_votes(char *export_path, char *filename_prefix, char **output_
         FILE *out = fopen(*output_filename, "w+");
 
         enum Decryption_Coordinator_status status =
-            Decryption_Coordinator_all_fragments_received(coordinator, out);
+            Decryption_Coordinator_all_fragments_received(coordinator, out, tally_results_array);
 
         if (status != DECRYPTION_COORDINATOR_SUCCESS)
             ok = false;

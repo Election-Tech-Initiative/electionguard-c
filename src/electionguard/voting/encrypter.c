@@ -166,11 +166,11 @@ Voting_Encrypter_Crypto_status_convert(enum Crypto_status status)
 
 bool Validate_selections(bool const *selections, uint32_t num_selections, uint32_t expected_num_selected)
 {
-    *selected_count = 0;
+    uint32_t count = 0;
     for (uint32_t i = 0; i < num_selections; i++)
     {
         if (selections[i])
-            *selected_count += 1;
+            count += 1;
     }
     return count == expected_num_selected ? true : false;
 }
@@ -182,7 +182,7 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
 
     struct Voting_Encrypter_encrypt_ballot_r balotR;
     balotR.status = VOTING_ENCRYPTER_SUCCESS;
-    uint32_t selected_count;
+
     // validate selection
     if (!Validate_selections(selections, encrypter->num_selections, expected_num_selected))
         balotR.status = VOTING_ENCRYPTER_SELECTION_ERROR;

@@ -16,7 +16,7 @@
             C:\msys64\mingw64\bin
             C:\msys64\usr\bin
 2. Build the ElectionGuard library.
-    1. Open a command prompt and navigate to the directory with the vendor-sdk repo.
+    1. Open a command prompt and navigate to the directory with the ElectionGuard-SDK-C-Implementation repo.
     2. Run the following commands:
 
             cmake -S . -B build -G "MSYS Makefiles" ..
@@ -24,10 +24,11 @@
 
     3. You should now have a `electionguard.a` or `electionguard.dll` (depending on the how cmake was configured).
 3. (Optional) Build the simple example election driver.
-    1. Open a command prompt and navigate to the directory with the vendor-sdk repo.
+    1. Open a command prompt and navigate to the directory with the ElectionGuard-SDK-C-Implementation repo.
     2. Run the following commands:
 
-            $env:CMAKE_PREFIX_PATH="C:\path\to\vendor-sdk\build\ElectionGuard"
+            $env:PATH += ";C:\path\to\ElectionGuard-SDK-C-Implementation\build\"
+            $env:CMAKE_PREFIX_PATH="C:\path\to\ElectionGuard-SDK-C-Implementation\build\ElectionGuard"
             cmake -S examples/simple -B simple_build -G "MSYS Makefiles"
             cmake --build simple_build --target simple
 

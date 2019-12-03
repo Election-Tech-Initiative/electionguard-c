@@ -1,9 +1,9 @@
 🗳️ ElectionGuard SDK C Implementation
 =====================================
 
-|Build| |License|
+|Release| |License|
 
-.. |Build| image:: https://github.com/microsoft/ElectionGuard-SDK-C-Implementation/workflows/Build/badge.svg
+.. |Release| image:: https://github.com/microsoft/ElectionGuard-SDK-C-Implementation/workflows/Release/badge.svg
 
 .. |License| image:: https://img.shields.io/github/license/microsoft/ElectionGuard-SDK-C-Implementation.svg
    :target: https://github.com/microsoft/ElectionGuard-SDK-C-Implementation/blob/master/LICENSE

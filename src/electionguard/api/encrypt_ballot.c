@@ -12,7 +12,7 @@ static bool initialize_encrypter(struct joint_public_key joint_key);
 static struct api_config api_config;
 static Voting_Encrypter encrypter;
 
-bool API_EncryptBallot(bool const *selections,
+bool API_EncryptBallot(uint8_t *selections_byte_array,
                        struct api_config config,
                        uint64_t *current_num_ballots,
                        uint64_t *identifier,
@@ -28,7 +28,13 @@ bool API_EncryptBallot(bool const *selections,
     create_base_hash_code(api_config);
     Voting_num_ballots = *current_num_ballots;
 
-    // Validate ballot selections before continuing
+    // Convert selections byte array to boolean array
+    // And validate ballot selections before continuing
+
+    bool selections[config.num_selections];
+    for(uint32_t i = 0; i < config.num_selections; i++) {
+        selections[i] = selections_byte_array[i] == 1;
+    }
 
     if (!Validate_selections(selections, config.num_selections))
         ok = false;
@@ -89,7 +95,10 @@ bool API_EncryptBallot(bool const *selections,
     }
 
     if (encrypter != NULL)
+    {
         Voting_Encrypter_free(encrypter);
+        encrypter = NULL;
+    }
 
     Crypto_parameters_free();
 

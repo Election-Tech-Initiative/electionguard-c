@@ -4,10 +4,11 @@
 
 #include <electionguard/voting/coordinator.h>
 
+#include "crypto_reps.h"
 #include "serialize/crypto.h"
 #include "serialize/voting.h"
+#include "sha2-openbsd.h"
 #include "voting/message_reps.h"
-#include "crypto_reps.h"
 #include "voting/num_ballots.h"
 
 // @design jwaksbaum This implementation relies on the fact that the
@@ -24,6 +25,7 @@ struct Voting_Coordinator_s
     bool registered[MAX_BALLOTS];
     bool cast[MAX_BALLOTS];
     bool spoiled[MAX_BALLOTS];
+    char *tracker[MAX_BALLOTS];
 };
 
 struct Voting_Coordinator_new_r Voting_Coordinator_new(uint32_t num_selections)
@@ -50,7 +52,7 @@ struct Voting_Coordinator_new_r Voting_Coordinator_new(uint32_t num_selections)
 void Voting_Coordinator_free(Voting_Coordinator ballot_box)
 {
     for(size_t i = 0; i < MAX_BALLOTS; i++)
-        if(ballot_box->registered[i]){
+        if (ballot_box->registered[i]) {
             for(uint32_t j=0; j<ballot_box->num_selections; j++){
                 Crypto_encryption_rep_free(&ballot_box->selections[i][j]);
             }
@@ -102,6 +104,25 @@ Voting_Coordinator_register_ballot(Voting_Coordinator c,
         c->registered[message_rep.id] = true;
         c->cast[message_rep.id] = false;
         c->spoiled[message_rep.id] = false;
+
+        // Reconstruct the ballot tracker    
+        SHA2_CTX context;
+        uint8_t *digest_buffer = malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
+        SHA256Init(&context);
+        SHA256Update(&context, message.bytes, message.len);
+        SHA256Final(digest_buffer, &context);
+        struct ballot_tracker tracker = {
+            .len = SHA256_DIGEST_LENGTH,
+            .bytes = digest_buffer,
+        };
+
+        c->tracker[message_rep.id] = display_ballot_tracker(tracker);
+        
+        if (tracker.bytes != NULL)
+        {
+            free((void *)tracker.bytes);
+            tracker.bytes = NULL;
+        }
     }
 
     return status;
@@ -172,6 +193,17 @@ Voting_Coordinator_spoil_ballot(Voting_Coordinator coordinator,
         coordinator->spoiled[i] = true;
 
     return result;
+}
+
+char *Voting_Coordinator_get_tracker(Voting_Coordinator coordinator,
+                                     struct ballot_identifier ballot_id)
+{
+    uint64_t i;
+
+    enum Voting_Coordinator_status result =
+        Voting_Coordinator_assert_registered(coordinator, ballot_id, &i);
+
+    return coordinator->tracker[i];
 }
 
 /* Write a single ballot to out, using the format

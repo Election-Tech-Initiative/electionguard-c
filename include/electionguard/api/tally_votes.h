@@ -13,7 +13,8 @@ bool API_TallyVotes(struct api_config config,
                     char *ballots_filename, 
                     char *export_path,
                     char *filename_prefix,
-                    char **output_filename);
+                    char **output_filename,
+                    uint32_t *tally_results_array);
 
 /**
  * Free the bytes allocated by TallyVotes */

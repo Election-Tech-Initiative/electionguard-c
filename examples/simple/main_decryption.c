@@ -61,11 +61,18 @@ bool decryption(FILE *in, FILE *out, struct trustee_state *trustee_states)
 
     if (ok)
     {
+        uint32_t tally_results[NUM_SELECTIONS];
         enum Decryption_Coordinator_status status =
-            Decryption_Coordinator_all_fragments_received(coordinator, out);
+            Decryption_Coordinator_all_fragments_received(coordinator, out, tally_results);
 
         if (status != DECRYPTION_COORDINATOR_SUCCESS)
             ok = false;
+
+            
+        for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
+        {
+            printf("Tally %u results = %u\n", i, tally_results[i]);
+        }
     }
 
     for (uint32_t i = 0; i < NUM_TRUSTEES; i++)

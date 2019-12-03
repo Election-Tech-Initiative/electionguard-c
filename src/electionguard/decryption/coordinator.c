@@ -370,7 +370,8 @@ static bool Decryption_Coordinator_all_trustees_seen_or_compensated(
 
 enum Decryption_Coordinator_status
 Decryption_Coordinator_all_fragments_received(Decryption_Coordinator c,
-                                              FILE *out)
+                                              FILE *out,
+                                              uint32_t *tally_results_array)
 {
     enum Decryption_Coordinator_status status = DECRYPTION_COORDINATOR_SUCCESS;
 
@@ -402,7 +403,10 @@ Decryption_Coordinator_all_fragments_received(Decryption_Coordinator c,
 
         if (status == DECRYPTION_COORDINATOR_SUCCESS)
         {
-            printf("Tally %lu \n", mpz_get_ui(decrypted_tally));
+            tally_results_array[i] = mpz_get_ui(decrypted_tally);
+#ifdef DEBUG_PRINT
+            printf("Tally %lu: %u \n", i, tally_results_array[i]);
+#endif
 
             const char *preamble_format = "tally %" PRIu64 ": ";
             const int expected_len = snprintf(NULL, 0, preamble_format, i);

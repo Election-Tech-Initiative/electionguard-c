@@ -143,16 +143,23 @@ int main()
     printf("\n--- Tally & Decrypt Votes ---\n");
 
     char *tally_filename;
+    uint32_t tally_results[config.num_selections];
     if (ok)
     {
         char *output_path = "../"; // This outputs to the directy above the cwd.
         char *output_prefix = "tally-";
         ok = API_TallyVotes(config, trustee_states, DECRYPTING_TRUSTEES,
-                ballots_filename, output_path, output_prefix, &tally_filename);
+                ballots_filename, output_path, output_prefix, &tally_filename, tally_results);
 
         if (ok)
+        {
+            for (uint32_t i = 0; i < config.num_selections; i++)
+            {
+                printf("Tally %u results = %u\n", i, tally_results[i]);
+            }
             printf("Tally from ballots input successful!\nCheck output file \"%s\"\n",
                 tally_filename);
+        }
     }
 
     // Cleanup

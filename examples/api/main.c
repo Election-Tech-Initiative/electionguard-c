@@ -43,7 +43,6 @@ int main()
     };
 
     // Create Election
-
     printf("\n--- Create Election ---\n");
 
     struct trustee_state trustee_states[MAX_TRUSTEES];

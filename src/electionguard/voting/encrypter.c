@@ -164,28 +164,26 @@ Voting_Encrypter_Crypto_status_convert(enum Crypto_status status)
     }
 }
 
-bool Validate_selections(bool const *selections, uint32_t num_selections, uint32_t *selected_count)
+bool Validate_selections(bool const *selections, uint32_t num_selections, uint32_t expected_num_selected)
 {
-    *selected_count = 0;
+    uint32_t count = 0;
     for (uint32_t i = 0; i < num_selections; i++)
     {
         if (selections[i])
-            *selected_count += 1;
+            count += 1;
     }
-    // we at least know we shouldn't have a ballot with nothing selected
-    // and we shouldn't have a ballot with everything selected
-    return (*selected_count > 0 && *selected_count < num_selections) ? true : false;
+    return count == expected_num_selected ? true : false;
 }
 struct Voting_Encrypter_encrypt_ballot_r
 Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
-                                bool const *selections)
+                                bool const *selections,
+                                uint32_t expected_num_selected)
 {
 
     struct Voting_Encrypter_encrypt_ballot_r balotR;
     balotR.status = VOTING_ENCRYPTER_SUCCESS;
-    uint32_t selected_count;
     // validate selection
-    if (!Validate_selections(selections, encrypter->num_selections, &selected_count))
+    if (!Validate_selections(selections, encrypter->num_selections, expected_num_selected))
         balotR.status = VOTING_ENCRYPTER_SELECTION_ERROR;
     if (balotR.status == VOTING_ENCRYPTER_SUCCESS)
     // Construct the ballot id
@@ -270,7 +268,7 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
         if (!Crypto_check_aggregate_cp_proof(encrypted_ballot.cp_proof, tally,
                                              encrypter->base_hash,
                                              encrypter->joint_key.public_key,
-                                             selected_count))
+                                             expected_num_selected))
         {
             balotR.status = VOTING_ENCRYPTER_UNKNOWN_ERROR;
         }

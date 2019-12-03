@@ -14,7 +14,7 @@
 #include <electionguard/max_values.h>
 
 static bool random_bit();
-static void fill_random_ballot(uint8_t *selections);
+static int32_t fill_random_ballot(uint8_t *selections);
 
 // Election Parameters
 uint32_t const NUM_TRUSTEES = 3;
@@ -29,9 +29,7 @@ uint32_t const NUM_RANDOM_BALLOT_SELECTIONS = 6;
 int main()
 {
     bool ok = true;
-    // Seed the RNG that we use to generate arbitrary ballots. This
-    // relies on the fact that the current implementation of the
-    // cryptography does not rely on the built in RNG.
+
     srand(time(NULL));
 
     struct api_config config = {
@@ -71,13 +69,16 @@ int main()
         {
 
             uint8_t selections[MAX_SELECTIONS];
-            fill_random_ballot(selections);
 
             uint64_t ballotId;
             struct register_ballot_message encrypted_ballot_message;
             char *tracker;
 
-            ok = API_EncryptBallot(selections, config, &current_num_ballots,
+            // we're assuming that the returned number of true selections for this ballot
+            // is the the correct expected number for this ballot style in order to encrypt it
+            uint32_t selected_count = fill_random_ballot(selections);
+
+            ok = API_EncryptBallot(selections, selected_count, config, &current_num_ballots,
                                    &ballotId, &encrypted_ballot_message,
                                    &tracker);
 
@@ -187,7 +188,7 @@ int main()
 
 bool random_bit() { return 1 & rand(); }
 
-void fill_random_ballot(uint8_t *selections)
+int32_t fill_random_ballot(uint8_t *selections)
 {
     uint32_t selected_count = 0;
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
@@ -203,16 +204,12 @@ void fill_random_ballot(uint8_t *selections)
         }
     }
 
-    // ensure we dont have all trues or all falses
-    if (selected_count == NUM_SELECTIONS)
-        selections[0] = 0;
-    else if (selected_count == 0)
-        selections[0] = 1;
-
     printf("vote created ");
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {
         printf("%d ", selections[i]);
     }
     printf("\n");
+
+    return selected_count;
 }

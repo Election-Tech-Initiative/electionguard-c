@@ -110,34 +110,30 @@ bool initialize_coordinator(void)
 
 static bool random_bit() { return 1 & rand(); }
 
-static void fill_random_ballot(bool *selections)
+static int32_t fill_random_ballot(bool *selections)
 {
-    bool selected = false;
+    uint32_t selected_count = 0;
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {
-        if (!selected)
+        if (random_bit())
         {
-            selections[i] = random_bit();
+            selections[i] = 1;
+            selected_count++;
         }
         else
         {
-            selections[i] = false;
-        }
-        if (selections[i])
-        {
-            selected = true;
+            selections[i] = 0;
         }
     }
-    if (!selected)
-    {
-        selections[NUM_SELECTIONS - 1] = true;
-    }
+
     printf("vote created ");
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {
         printf("%d ", selections[i]);
     }
     printf("\n");
+
+    return selected_count;
 }
 
 bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
@@ -150,12 +146,9 @@ bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
     {
         bool selections[MAX_SELECTIONS];
 
-        fill_random_ballot(selections);
-        if (!Validate_selections(selections, NUM_SELECTIONS))
-        {
-            printf("oops");
-            continue;
-        }
+        // we're assuming that the returned number of true selections for this ballot
+        // is the the correct expected number for this ballot style in order to encrypt it
+        uint32_t num_selected = fill_random_ballot(selections);
 
         struct register_ballot_message message = {.bytes = NULL};
         struct ballot_tracker tracker = {.bytes = NULL};
@@ -165,7 +158,7 @@ bool simulate_random_votes(uint32_t encrypter_ix, uint64_t num_ballots)
         if (ok)
         {
             struct Voting_Encrypter_encrypt_ballot_r result =
-                Voting_Encrypter_encrypt_ballot(encrypter, selections);
+                Voting_Encrypter_encrypt_ballot(encrypter, selections, num_selected);
 
             if (result.status != VOTING_ENCRYPTER_SUCCESS)
                 ok = false;

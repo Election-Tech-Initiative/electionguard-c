@@ -13,6 +13,7 @@ static struct api_config api_config;
 static Voting_Encrypter encrypter;
 
 bool API_EncryptBallot(uint8_t *selections_byte_array,
+                       uint32_t expected_num_selected,
                        struct api_config config,
                        uint64_t *current_num_ballots,
                        uint64_t *identifier,
@@ -36,9 +37,6 @@ bool API_EncryptBallot(uint8_t *selections_byte_array,
         selections[i] = selections_byte_array[i] == 1;
     }
 
-    if (!Validate_selections(selections, config.num_selections))
-        ok = false;
-
     // Initialize Encrypter
 
     if (ok)
@@ -52,7 +50,7 @@ bool API_EncryptBallot(uint8_t *selections_byte_array,
     };
     if (ok)
     {
-        result = Voting_Encrypter_encrypt_ballot(encrypter, selections);
+        result = Voting_Encrypter_encrypt_ballot(encrypter, selections, expected_num_selected);
 
         if (result.status != VOTING_ENCRYPTER_SUCCESS)
             ok = false;

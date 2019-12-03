@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #ifdef _MSC_VER
 #include <io.h>
 #endif
@@ -31,7 +32,7 @@ int main()
     // Seed the RNG that we use to generate arbitrary ballots. This
     // relies on the fact that the current implementation of the
     // cryptography does not rely on the built in RNG.
-    srand(100);
+    srand(time(NULL));
 
     struct api_config config = {
         .num_selections = NUM_SELECTIONS,
@@ -173,8 +174,25 @@ bool random_bit() { return 1 & rand(); }
 
 void fill_random_ballot(uint8_t *selections)
 {
+    uint32_t selected_count = 0;
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
-        selections[i] = random_bit() ? 1 : 0;
+    {
+        if (random_bit())
+        {
+            selections[i] = 1;
+            selected_count++;
+        }
+        else
+        {
+            selections[i] = 0;
+        }
+    }
+
+    // ensure we dont have all trues or all falses
+    if (selected_count == NUM_SELECTIONS)
+        selections[0] = 0;
+    else if (selected_count == 0)
+        selections[0] = 1;
 
     printf("vote created ");
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)

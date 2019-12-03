@@ -112,26 +112,26 @@ static bool random_bit() { return 1 & rand(); }
 
 static void fill_random_ballot(bool *selections)
 {
-    bool selected = false;
+    uint32_t selected_count = 0;
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {
-        if (!selected)
+        if (random_bit())
         {
-            selections[i] = random_bit();
+            selections[i] = 1;
+            selected_count++;
         }
         else
         {
-            selections[i] = false;
-        }
-        if (selections[i])
-        {
-            selected = true;
+            selections[i] = 0;
         }
     }
-    if (!selected)
-    {
-        selections[NUM_SELECTIONS - 1] = true;
-    }
+
+    // ensure we dont have all trues or all falses
+    if (selected_count == NUM_SELECTIONS)
+        selections[0] = 0;
+    else if (selected_count == 0)
+        selections[0] = 1;
+
     printf("vote created ");
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {

@@ -27,8 +27,8 @@
     1. Open a command prompt and navigate to the directory with the ElectionGuard-SDK-C-Implementation repo.
     2. Run the following commands:
 
-            $env:PATH += ";C:\path\to\ElectionGuard-SDK-C-Implementation\build\"
-            $env:CMAKE_PREFIX_PATH="C:\path\to\ElectionGuard-SDK-C-Implementation\build\ElectionGuard"
+            set PATH=%PATH%;C:\path\to\ElectionGuard-SDK-C-Implementation\build\
+            set CMAKE_PREFIX_PATH=C:\path\to\ElectionGuard-SDK-C-Implementation\build\ElectionGuard
             cmake -S examples/simple -B simple_build -G "MSYS Makefiles"
             cmake --build simple_build --target simple
 

@@ -181,7 +181,8 @@ void Crypto_dis_proof_free(struct dis_proof_rep *dst);
 
 bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
                                       struct encryption_rep encryption,
-                                      struct hash base_hash, mpz_t public_key);
+                                      struct hash base_hash, mpz_t public_key,
+                                      uint32_t l_int);
 
 void Crypto_generate_aggregate_cp_proof(struct cp_proof_rep *result,
                                         RandomSource source, mpz_t nonce,

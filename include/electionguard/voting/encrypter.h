@@ -60,7 +60,8 @@ void Voting_Encrypter_free(Voting_Encrypter encrypter);
  * when done, ie. they own them. */
 struct Voting_Encrypter_encrypt_ballot_r
 Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
-                                bool const *selections);
+                                bool const *selections,
+                                uint32_t expected_num_selected);
 
 struct Voting_Encrypter_encrypt_ballot_r
 {
@@ -69,6 +70,6 @@ struct Voting_Encrypter_encrypt_ballot_r
     struct ballot_tracker tracker;
     struct ballot_identifier id;
 };
-bool Validate_selections(bool const *selections, uint32_t num_selections);
+bool Validate_selections(bool const *selections, uint32_t num_selections, uint32_t expected_num_selected);
 
 #endif /* __VOTING_ENCRYPTER_H__ */

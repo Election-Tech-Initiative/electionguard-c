@@ -23,7 +23,9 @@ bool API_RecordBallots(uint32_t num_selections,
                        struct register_ballot_message *encrypted_ballots,
                        char *export_path,
                        char *filename_prefix,
-                       char **output_filename)
+                       char **output_filename,
+                       char **casted_tracker_strings,
+                       char **spoiled_tracker_strings)
 {
     bool ok = true;
     
@@ -67,6 +69,8 @@ bool API_RecordBallots(uint32_t num_selections,
             enum Voting_Coordinator_status status =
                 Voting_Coordinator_cast_ballot(coordinator, ballot_identifier);
 
+            casted_tracker_strings[i] = Voting_Coordinator_get_tracker(coordinator, ballot_identifier);
+
             if (status != VOTING_COORDINATOR_SUCCESS)
                 ok = false;
         }
@@ -95,6 +99,8 @@ bool API_RecordBallots(uint32_t num_selections,
 #endif
             enum Voting_Coordinator_status status =
                 Voting_Coordinator_spoil_ballot(coordinator, ballot_identifier);
+
+            spoiled_tracker_strings[i] = Voting_Coordinator_get_tracker(coordinator, ballot_identifier);
 
             if (status != VOTING_COORDINATOR_SUCCESS)
                 ok = false;
@@ -127,10 +133,22 @@ bool API_RecordBallots(uint32_t num_selections,
     return ok;
 }
 
-void API_RecordBallots_free(char *output_filename)
+void API_RecordBallots_free(char *output_filename,
+                            uint32_t num_cast_ballots,
+                            uint32_t num_spoil_ballots,
+                            char **casted_tracker_strings,
+                            char **spoiled_tracker_strings)
 {
     if (output_filename != NULL)
         free(output_filename);
+    
+    for (uint32_t i = 0; i < num_cast_ballots; i++)
+        if (casted_tracker_strings[i] != NULL)
+            free(casted_tracker_strings[i]);
+
+    for (uint32_t i = 0; i < num_spoil_ballots; i++)
+        if (spoiled_tracker_strings[i] != NULL)
+            free(spoiled_tracker_strings[i]);
 }
 
 bool initialize_coordinator(uint32_t num_selections)

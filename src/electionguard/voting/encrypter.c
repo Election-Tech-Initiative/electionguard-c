@@ -164,7 +164,7 @@ Voting_Encrypter_Crypto_status_convert(enum Crypto_status status)
     }
 }
 
-bool Validate_selections(bool const *selections, uint32_t num_selections)
+bool Validate_selections(bool const *selections, uint32_t num_selections, uint32_t expected_num_selected)
 {
     uint32_t count = 0;
     for (uint32_t i = 0; i < num_selections; i++)
@@ -172,17 +172,18 @@ bool Validate_selections(bool const *selections, uint32_t num_selections)
         if (selections[i])
             count += 1;
     }
-    return (count == 1) ? true : false;
+    return count == expected_num_selected ? true : false;
 }
 struct Voting_Encrypter_encrypt_ballot_r
 Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
-                                bool const *selections)
+                                bool const *selections,
+                                uint32_t expected_num_selected)
 {
 
     struct Voting_Encrypter_encrypt_ballot_r balotR;
     balotR.status = VOTING_ENCRYPTER_SUCCESS;
     // validate selection
-    if (!Validate_selections(selections, encrypter->num_selections))
+    if (!Validate_selections(selections, encrypter->num_selections, expected_num_selected))
         balotR.status = VOTING_ENCRYPTER_SELECTION_ERROR;
     if (balotR.status == VOTING_ENCRYPTER_SUCCESS)
     // Construct the ballot id
@@ -266,7 +267,8 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
             tally, encrypter->base_hash, encrypter->joint_key.public_key);
         if (!Crypto_check_aggregate_cp_proof(encrypted_ballot.cp_proof, tally,
                                              encrypter->base_hash,
-                                             encrypter->joint_key.public_key))
+                                             encrypter->joint_key.public_key,
+                                             expected_num_selected))
         {
             balotR.status = VOTING_ENCRYPTER_UNKNOWN_ERROR;
         }

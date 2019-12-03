@@ -574,7 +574,8 @@ bool Crypto_check_decryption_cp_proof(
 //Check the proof, true means the proof checked
 _Bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
                                       struct encryption_rep encryption,
-                                      struct hash base_hash, mpz_t public_key)
+                                      struct hash base_hash, mpz_t public_key,
+                                      uint32_t l_int)
 {
 
     _Bool result = true;
@@ -611,8 +612,14 @@ _Bool Crypto_check_aggregate_cp_proof(struct cp_proof_rep proof,
 
     result &= (0 == mpz_cmp(gv, aac));
 
-    //L is 1 for now, so this is g^LC when this multiplication happens it should be mod q
-    pow_mod_p(glc, generator, my_C.digest);
+    // number of selections set to L
+    mpz_t L;
+    mpz_init(L);
+    mpz_set_ui(L, l_int);
+    mul_mod_q(L, L, my_C.digest);
+
+    // g^(LC)
+    pow_mod_p(glc, generator, L);
     // K^v
     pow_mod_p(glckv, public_key, proof.response);
     // g^LC * K^v

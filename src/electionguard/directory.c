@@ -1,20 +1,20 @@
 
 
-#include <linux/limits.h>     /* PATH_MAX */
+#include <stdio.h>     /* FILENAME_MAX */
 #include <sys/stat.h>   /* mkdir(2) */
 #include <errno.h>
 
 #include "directory.h"
 
-#ifndef PATH_MAX
-#define PATH_MAX=256
+#ifndef FILENAME_MAX
+#define FILENAME_MAX=256
 #endif
 
 bool mkdir_p(const char *path)
 {
     /* Adapted from http://stackoverflow.com/a/2336245/119527 */
     const size_t len = strlen(path);
-    char _path[PATH_MAX];
+    char _path[FILENAME_MAX];
     char *p; 
 
     errno = 0;

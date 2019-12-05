@@ -182,6 +182,7 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
 
     struct Voting_Encrypter_encrypt_ballot_r balotR;
     balotR.status = VOTING_ENCRYPTER_SUCCESS;
+
     // validate selection
     if (!Validate_selections(selections, encrypter->num_selections, expected_num_selected))
         balotR.status = VOTING_ENCRYPTER_SELECTION_ERROR;

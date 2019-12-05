@@ -5,6 +5,7 @@
 
 #include "api/base_hash.h"
 #include "api/filename.h"
+#include "directory.h"
 
 // Initialize
 static bool initialize_coordinator(void);
@@ -266,6 +267,10 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
 #ifdef DEBUG_PRINT 
     printf("API_TALLYVOTES :: generated unique filename for export at \"%s\"\n", *output_filename);
 #endif
+
+    if (ok) {
+        ok = create_directory(export_path);
+    }
 
     if (ok)
     {

@@ -6,6 +6,7 @@
 #include "api/filename.h"
 #include "serialize/voting.h"
 #include "voting/num_ballots.h"
+#include "directory.h"
 
 static bool initialize_coordinator(uint32_t num_selections);
 static bool get_serialized_ballot_identifier(int64_t ballot_id, struct ballot_identifier *ballot_identifier);
@@ -205,6 +206,10 @@ bool export_ballots(char *export_path, char *filename_prefix, char **output_file
 #ifdef DEBUG_PRINT 
     printf("API_RecordBallots :: generated unique filename for export at \"%s\"\n", *output_filename);
 #endif
+
+    if (ok) {
+        ok = create_directory(export_path);
+    }
 
     if (ok)
     {

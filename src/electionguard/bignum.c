@@ -273,7 +273,7 @@ uint4096 export_to_uint4096(mpz_t v)
 
 #ifdef DEBUG_PRINT
 
-    printf("Exporting %zu bits", outsize);
+    printf("Exporting %zu bits", written);
 
     printf("\nExported to bits\n");
     print_base16(v);

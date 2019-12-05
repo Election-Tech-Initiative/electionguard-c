@@ -208,7 +208,7 @@ bool export_ballots(char *export_path, char *filename_prefix, char **output_file
 #endif
 
     if (ok) {
-        ok = mkdir_p(export_path);
+        ok = create_directory(export_path);
     }
 
     if (ok)

@@ -269,7 +269,7 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
 #endif
 
     if (ok) {
-        ok = mkdir_p(export_path);
+        ok = create_directory(export_path);
     }
 
     if (ok)

@@ -4,6 +4,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-bool mkdir_p(const char *path);
+bool create_directory(const char *path);
 
 #endif /* __DIRECTORY_H__ */

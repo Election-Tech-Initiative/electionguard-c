@@ -10,7 +10,7 @@
 #define FILENAME_MAX=256
 #endif
 
-bool mkdir_p(const char *path)
+bool create_directory(const char *path)
 {
     /* Adapted from http://stackoverflow.com/a/2336245/119527 */
     const size_t len = strlen(path);
@@ -39,7 +39,13 @@ bool mkdir_p(const char *path)
             /* Temporarily truncate */
             *p = '\0';
 
-            if (mkdir(_path, S_IRWXU) != 0) {
+            int mk_dir_res = -1;
+#ifdef _WIN32
+            mk_dir_res = mkdir(_path);
+#else
+            mk_dir_res = mkdir(_path, S_IRWXU);
+#endif
+            if (mk_dir_res != 0) {
                 if (errno != EEXIST)
                     return false; 
             }
@@ -48,7 +54,14 @@ bool mkdir_p(const char *path)
         }
     }   
 
-    if (mkdir(_path, S_IRWXU) != 0) {
+    int mk_dir_res = -1;
+#ifdef _WIN32
+    mk_dir_res = mkdir(_path);
+#else
+    mk_dir_res = mkdir(_path, S_IRWXU);
+#endif
+
+    if (mk_dir_res != 0) {
         if (errno != EEXIST)
             return false; 
     }   

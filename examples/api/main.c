@@ -18,13 +18,11 @@ static int32_t fill_random_ballot(uint8_t *selections);
 
 // Election Parameters
 uint32_t const NUM_TRUSTEES = 3;
-uint32_t const THRESHOLD = 2;
+uint32_t const THRESHOLD = 2; 
 uint32_t const NUM_ENCRYPTERS = 3;
 uint32_t const NUM_SELECTIONS = 6;
-uint32_t const DECRYPTING_TRUSTEES = 2;
+uint32_t const DECRYPTING_TRUSTEES = 2;             // must be >= THRESHOLD && <= NUM_TRUSTEES
 uint32_t const NUM_RANDOM_BALLOT_SELECTIONS = 6;
-
-// ^The number of trustees that will participate in decryption. Will fail if this is less than THRESHOLD
 
 int main()
 {
@@ -142,12 +140,14 @@ int main()
             printf("Casted Ballot Trackers:\n");
             for (uint32_t i = 0; i < current_cast_index; i++)
             {
-                printf("\t%s\n", casted_trackers[i]);
+                uint64_t id = casted_ballot_ids[i];
+                printf("\t%ld: %s\n", id, casted_trackers[i]);
             }
             printf("Spoiled Ballot Trackers:\n");
             for (uint32_t i = 0; i < current_spoiled_index; i++)
             {
-                printf("\t%s\n", spoiled_trackers[i]);
+                uint64_t id = spoiled_ballot_ids[i];
+                printf("\t%ld: %s\n", id, spoiled_trackers[i]);
             }
             printf("Ballot registrations and recording of cast/spoil successful!\nCheck output file \"%s\"\n",
                 ballots_filename);
@@ -164,14 +164,26 @@ int main()
     {
         char *output_path = "./tallies/"; // This outputs to the directy above the cwd.
         char *output_prefix = "tally-";
-        ok = API_TallyVotes(config, trustee_states, DECRYPTING_TRUSTEES,
+
+        // copy the threshold number of trustees needed to decrypt
+        struct trustee_state threshold_trustee_states[MAX_TRUSTEES];
+
+        for (uint32_t i = 0; i < THRESHOLD && ok; i++)
+        {
+            threshold_trustee_states[i] = trustee_states[i];
+
+            if (threshold_trustee_states[i].bytes == NULL)
+                ok = false;
+        }
+
+        ok = API_TallyVotes(config, threshold_trustee_states, DECRYPTING_TRUSTEES,
                 ballots_filename, output_path, output_prefix, &tally_filename, tally_results);
 
         if (ok)
         {
             for (uint32_t i = 0; i < config.num_selections; i++)
             {
-                printf("Tally %u results = %u\n", i, tally_results[i]);
+                printf("Tally Result: selection: %u: count = %u\n", i, tally_results[i]);
             }
             printf("Tally from ballots input successful!\nCheck output file \"%s\"\n",
                 tally_filename);

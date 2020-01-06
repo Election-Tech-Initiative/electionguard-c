@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,8 +14,18 @@
 #include <electionguard/api/tally_votes.h>
 #include <electionguard/max_values.h>
 
+struct test_ballot
+{
+    uint64_t ballotId;
+    bool isCast;
+    bool isSpoiled;
+    char *tracker;
+    uint8_t selections[MAX_SELECTIONS];
+};
+
 static bool random_bit();
 static int32_t fill_random_ballot(uint8_t *selections);
+static bool result_equals_expected_selections(struct test_ballot *testBallots, uint32_t actual_tally, uint32_t selection_index);
 
 // Election Parameters
 uint32_t const NUM_TRUSTEES = 3;
@@ -40,7 +51,7 @@ int main()
     };
 
     // Create Election
-    printf("\n--- Create Election ---\n");
+    printf("\n--- Create Election ---\n\n");
 
     struct trustee_state trustee_states[MAX_TRUSTEES];
     ok = API_CreateElection(&config, trustee_states);
@@ -53,47 +64,45 @@ int main()
 
     // Encrypt Ballots
 
-    printf("\n--- Encrypt Ballots ---\n");
+    printf("\n--- Encrypt Ballots ---\n\n");
     
     struct register_ballot_message encrypted_ballots[NUM_RANDOM_BALLOT_SELECTIONS];
-    uint64_t ballot_identifiers[NUM_RANDOM_BALLOT_SELECTIONS];
-    char *ballot_trackers[NUM_RANDOM_BALLOT_SELECTIONS];
+    struct test_ballot testBallots[NUM_RANDOM_BALLOT_SELECTIONS];
 
     if (ok)
     {
         uint64_t current_num_ballots = 0;
         for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
         {
-
-            uint8_t selections[MAX_SELECTIONS];
-
-            uint64_t ballotId;
+            struct test_ballot testBallot;
             struct register_ballot_message encrypted_ballot_message;
-            char *tracker;
+            //char *tracker;
 
             // we're assuming that the returned number of true selections for this ballot
             // is the the correct expected number for this ballot style in order to encrypt it
-            uint32_t selected_count = fill_random_ballot(selections);
+            uint32_t selected_count = fill_random_ballot(testBallot.selections);
 
-            ok = API_EncryptBallot(selections, selected_count, config, &current_num_ballots,
-                                   &ballotId, &encrypted_ballot_message,
-                                   &tracker);
+            ok = API_EncryptBallot(testBallot.selections, selected_count, config, &current_num_ballots,
+                                   &testBallot.ballotId, &encrypted_ballot_message,
+                                   &testBallot.tracker);
 
             if (ok)
             {
                 encrypted_ballots[i] = encrypted_ballot_message;
-                ballot_identifiers[i] = ballotId;
-                ballot_trackers[i] = tracker;
+                // ballot_identifiers[i] = testBallot.ballotId;
+                // ballot_trackers[i] = testBallot.tracker;
+
+                testBallots[i] = testBallot;
 
                 // Print id and tracker
-                printf("Ballot id: %lu\n%s\n\n", ballotId, tracker);
+                printf("Ballot id: %lu\n%s\n\n", testBallot.ballotId, testBallot.tracker);
             }
         }
     }
 
     // Register & Record Cast/Spoil Multiple Ballots
 
-    printf("\n--- Randomly Assigning Ballots to be Cast or Spoil Arrays ---\n");
+    printf("\n--- Randomly Assigning Ballots to be Cast or Spoil Arrays ---\n\n");
 
     uint32_t current_cast_index = 0;
     uint32_t current_spoiled_index = 0;
@@ -104,24 +113,26 @@ int main()
     {
         if (random_bit())
         {
-            casted_ballot_ids[current_cast_index] = ballot_identifiers[i];
+            testBallots[i].isCast = true;
+            casted_ballot_ids[current_cast_index] = testBallots[i].ballotId;
             current_cast_index++;
 
-            printf("Cast Ballot Id: %lu\n", ballot_identifiers[i]);
+            printf("Ballot Id: %lu - Cast!\n", testBallots[i].ballotId);
         }
         else
         {
-            spoiled_ballot_ids[current_spoiled_index] = ballot_identifiers[i];
+            testBallots[i].isSpoiled = true;
+            spoiled_ballot_ids[current_spoiled_index] = testBallots[i].ballotId;
             current_spoiled_index++;
 
-            printf("Spoil Ballot Id: %lu\n", ballot_identifiers[i]);
+            printf("Ballot Id: %lu - Spoiled!\n", testBallots[i].ballotId);
         }
     }
 
     if ((current_cast_index + current_spoiled_index) != NUM_RANDOM_BALLOT_SELECTIONS)
         ok = false;
 
-    printf("\n--- Record Ballots (Register, Cast, and Spoil) ---\n");
+    printf("\n--- Record Ballots (Register, Cast, and Spoil) ---\n\n");
 
     char *ballots_filename;
     char *casted_trackers[current_cast_index];
@@ -141,22 +152,24 @@ int main()
             for (uint32_t i = 0; i < current_cast_index; i++)
             {
                 uint64_t id = casted_ballot_ids[i];
+                assert(testBallots[id].isCast == true);
                 printf("\t%ld: %s\n", id, casted_trackers[i]);
             }
-            printf("Spoiled Ballot Trackers:\n");
+            printf("\nSpoiled Ballot Trackers:\n");
             for (uint32_t i = 0; i < current_spoiled_index; i++)
             {
                 uint64_t id = spoiled_ballot_ids[i];
+                assert(testBallots[id].isSpoiled == true);
                 printf("\t%ld: %s\n", id, spoiled_trackers[i]);
             }
-            printf("Ballot registrations and recording of cast/spoil successful!\nCheck output file \"%s\"\n",
+            printf("\nBallot registrations and recording of cast/spoil successful!\nCheck output file \"%s\"\n",
                 ballots_filename);
         }
     }
 
     // Tally Votes & Decrypt Results
 
-    printf("\n--- Tally & Decrypt Votes ---\n");
+    printf("\n--- Tally & Decrypt Votes ---\n\n");
 
     char *tally_filename;
     uint32_t tally_results[config.num_selections];
@@ -167,26 +180,28 @@ int main()
 
         // copy the threshold number of trustees needed to decrypt
         struct trustee_state threshold_trustee_states[MAX_TRUSTEES];
-
         for (uint32_t i = 0; i < THRESHOLD && ok; i++)
         {
             threshold_trustee_states[i] = trustee_states[i];
-
-            if (threshold_trustee_states[i].bytes == NULL)
-                ok = false;
+            assert(threshold_trustee_states[i].bytes != NULL);
         }
+        
+        printf("Tallying with %d of %d trustees \n\n", DECRYPTING_TRUSTEES, config.num_trustees);
 
         ok = API_TallyVotes(config, threshold_trustee_states, DECRYPTING_TRUSTEES,
                 ballots_filename, output_path, output_prefix, &tally_filename, tally_results);
 
         if (ok)
         {
+            printf("Results for: \n");
             for (uint32_t i = 0; i < config.num_selections; i++)
             {
-                printf("Tally Result: selection: %u: count = %u\n", i, tally_results[i]);
+                assert(result_equals_expected_selections(testBallots, tally_results[i], i));
             }
-            printf("Tally from ballots input successful!\nCheck output file \"%s\"\n",
+            printf("\nTally from ballots input successful!\nCheck output file \"%s\"\n",
                 tally_filename);
+        } else {
+            printf("\nTally & Decrypt Votes - Error in API_TallyVotes! \n");
         }
     }
 
@@ -195,13 +210,27 @@ int main()
     API_TallyVotes_free(tally_filename);
     API_RecordBallots_free(ballots_filename, current_cast_index, current_spoiled_index, casted_trackers, spoiled_trackers);
     for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS && ok; i++)
-        API_EncryptBallot_free(encrypted_ballots[i], ballot_trackers[i]);
+        API_EncryptBallot_free(encrypted_ballots[i], testBallots[i].tracker);
     API_CreateElection_free(config.joint_key, trustee_states);
 
     if (ok)
         return EXIT_SUCCESS;
     else
         return EXIT_FAILURE;
+}
+
+bool result_equals_expected_selections(struct test_ballot *testBallots, uint32_t actual_tally, uint32_t selection_index) 
+{
+    uint32_t expected_tally = 0;
+
+    for (uint64_t i = 0; i < NUM_RANDOM_BALLOT_SELECTIONS; i++)
+    {
+        if (testBallots[i].isCast) {
+            expected_tally += testBallots[i].selections[selection_index];
+        }
+    }
+    printf("\tselection: %d: expected: %d actual: %d\n", selection_index, expected_tally, actual_tally);
+    return expected_tally == actual_tally;
 }
 
 bool random_bit() { return 1 & rand(); }
@@ -222,12 +251,12 @@ int32_t fill_random_ballot(uint8_t *selections)
         }
     }
 
-    printf("vote created ");
+    printf("vote created selections: [ ");
     for (uint32_t i = 0; i < NUM_SELECTIONS; i++)
     {
-        printf("%d ", selections[i]);
+        printf("%d, ", selections[i]);
     }
-    printf("\n");
+    printf("]\n");
 
     return selected_count;
 }

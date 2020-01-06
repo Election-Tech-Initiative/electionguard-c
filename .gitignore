@@ -33,3 +33,4 @@ _deps
 
 ElectionGuardConfig.cmake
 *_build/
+ballots/

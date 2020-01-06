@@ -9,20 +9,22 @@
 
 // Initialize
 static bool initialize_coordinator(void);
-static bool initialize_trustees(struct trustee_state *trustee_states);
+static bool initialize_trustees(uint32_t num_decrypting_trustees, struct trustee_state *trustee_states);
 
 // Tally and Decrypt
 static bool tally_ballots(char *in_ballots_filename);
-static bool decrypt_tally_shares(uint32_t num_decrypting_trustees);
+static bool decrypt_tally_shares();
 static bool decrypt_tally_decryption_fragments(
     bool *requests_present, struct decryption_fragments_request *requests);
+static bool request_missing_trustee_tally_shares(
+    bool *request_present, struct decryption_fragments_request *requests);
 static bool export_tally_votes(char *export_path, char *filename_prefix,
                                char **output_filename, uint32_t *tally_results_array);
 
 // Global state
 static struct api_config api_config;
 static Decryption_Coordinator coordinator;
-static Decryption_Trustee trustees[MAX_TRUSTEES];
+static Decryption_Trustee decryption_trustees[MAX_TRUSTEES];
 
 bool API_TallyVotes(struct api_config config,
                     struct trustee_state *trustee_states,
@@ -41,13 +43,17 @@ bool API_TallyVotes(struct api_config config,
     api_config = config;
     create_base_hash_code(api_config);
 
+    // set local variables
+    bool request_present[MAX_TRUSTEES];
+    struct decryption_fragments_request requests[MAX_TRUSTEES];
+
     // Initialize
 
     if (ok)
         ok = initialize_coordinator();
 
     if (ok)
-        ok = initialize_trustees(trustee_states);
+        ok = initialize_trustees(num_decrypting_trustees, trustee_states);
 
     // Tally and Decrypt Shares
 
@@ -57,25 +63,9 @@ bool API_TallyVotes(struct api_config config,
     if (ok)
         ok = decrypt_tally_shares(num_decrypting_trustees);
 
-    
-    struct decryption_fragments_request requests[MAX_TRUSTEES];
-    bool request_present[MAX_TRUSTEES];
-    for (uint32_t i = 0; i < api_config.num_trustees; i++)
-        requests[i] = (struct decryption_fragments_request){.bytes = NULL};
-
     if (ok)
-    {
-        struct Decryption_Coordinator_all_shares_received_r result =
-            Decryption_Coordinator_all_shares_received(coordinator);
-
-        if (result.status != DECRYPTION_COORDINATOR_SUCCESS)
-            ok = false;
-        else
-            for (uint32_t i = 0; i < result.num_trustees; i++)
-                requests[i] = result.requests[i],
-                request_present[i] = result.request_present[i];
-    }
-
+        ok = request_missing_trustee_tally_shares(request_present, requests);
+    
     if (ok)
         ok = decrypt_tally_decryption_fragments(request_present, requests);
 
@@ -91,11 +81,11 @@ bool API_TallyVotes(struct api_config config,
             requests[i].bytes = NULL;
         }
 
-    for (uint32_t i = 0; i < api_config.num_trustees; i++)
-        if (trustees[i] != NULL)
+    for (uint32_t i = 0; i < num_decrypting_trustees; i++)
+        if (decryption_trustees[i] != NULL)
         {
-            Decryption_Trustee_free(trustees[i]);
-            trustees[i] = NULL;
+            Decryption_Trustee_free(decryption_trustees[i]);
+            decryption_trustees[i] = NULL;
         }
 
     if (coordinator != NULL)
@@ -130,11 +120,14 @@ bool initialize_coordinator(void)
     return ok;
 }
 
-bool initialize_trustees(struct trustee_state *trustee_states)
+bool initialize_trustees(uint32_t num_decrypting_trustees, struct trustee_state *trustee_states)
 {
+    if (num_decrypting_trustees < api_config.threshold)
+        return false;
+
     bool ok = true;
 
-    for (uint32_t i = 0; i < api_config.num_trustees && ok; i++)
+    for (uint32_t i = 0; i < num_decrypting_trustees && ok; i++)
     {
         struct Decryption_Trustee_new_r result =
             Decryption_Trustee_new(api_config.num_trustees, api_config.threshold,
@@ -143,7 +136,7 @@ bool initialize_trustees(struct trustee_state *trustee_states)
         if (result.status != DECRYPTION_TRUSTEE_SUCCESS)
             ok = false;
         else
-            trustees[i] = result.decryptor;
+            decryption_trustees[result.trustee_index] = result.decryptor;
     }
 
     return ok;
@@ -157,6 +150,9 @@ bool tally_ballots(char *in_ballots_filename)
 
     for (uint32_t i = 0; i < api_config.num_trustees && ok; i++)
     {
+        if (decryption_trustees[i] == NULL)
+            continue;
+
         int seek_status = fseek(in, 0L, SEEK_SET);
         if (seek_status != 0)
             ok = false;
@@ -164,7 +160,7 @@ bool tally_ballots(char *in_ballots_filename)
         if (ok)
         {
             enum Decryption_Trustee_status status =
-                Decryption_Trustee_tally_voting_record(trustees[i], in);
+                Decryption_Trustee_tally_voting_record(decryption_trustees[i], in);
 
             if (status != DECRYPTION_TRUSTEE_SUCCESS)
                 ok = false;
@@ -180,16 +176,19 @@ bool tally_ballots(char *in_ballots_filename)
     return ok;
 }
 
-bool decrypt_tally_shares(uint32_t num_decrypting_trustees)
+bool decrypt_tally_shares()
 {
     bool ok = true;
 
-    for (uint32_t i = 0; i < num_decrypting_trustees && ok; i++)
+    for (uint32_t i = 0; i < api_config.num_trustees && ok; i++)
     {
+        if (decryption_trustees[i] == NULL)
+            continue;
+
         struct decryption_share share = {.bytes = NULL};
 
         struct Decryption_Trustee_compute_share_r result =
-            Decryption_Trustee_compute_share(trustees[i]);
+            Decryption_Trustee_compute_share(decryption_trustees[i]);
 
         if (result.status != DECRYPTION_TRUSTEE_SUCCESS)
             ok = false;
@@ -214,6 +213,32 @@ bool decrypt_tally_shares(uint32_t num_decrypting_trustees)
     return ok;
 }
 
+bool request_missing_trustee_tally_shares(
+    bool *request_present, struct decryption_fragments_request *requests)
+{
+    bool ok = true;
+
+    for (uint32_t i = 0; i < api_config.num_trustees && ok; i++)
+    {
+        requests[i] = (struct decryption_fragments_request){.bytes = NULL};
+
+        if (ok)
+        {
+            struct Decryption_Coordinator_all_shares_received_r result =
+                Decryption_Coordinator_all_shares_received(coordinator);
+
+            if (result.status != DECRYPTION_COORDINATOR_SUCCESS)
+                ok = false;
+            else
+                for (uint32_t i = 0; i < result.num_trustees; i++)
+                    requests[i] = result.requests[i],
+                    request_present[i] = result.request_present[i];
+        }
+    }
+
+    return ok;
+}
+
 bool decrypt_tally_decryption_fragments(
     bool *requests_present, struct decryption_fragments_request *requests)
 {
@@ -221,13 +246,19 @@ bool decrypt_tally_decryption_fragments(
 
     for (uint32_t i = 0; i < api_config.num_trustees && ok; i++)
     {
+        // a request exists at this index for the announced trustee
+        // to decrypt fragments for a missing trustee
         if (requests_present[i])
         {
-            struct decryption_fragments decryption_fragments = {.bytes = NULL};
 
+            // if the decryption trustee at the index is null, then they have not announced
+            if (decryption_trustees[i] == NULL)
+                ok = false;
+
+            struct decryption_fragments decryption_fragments = {.bytes = NULL};
             {
                 struct Decryption_Trustee_compute_fragments_r result =
-                    Decryption_Trustee_compute_fragments(trustees[i],
+                    Decryption_Trustee_compute_fragments(decryption_trustees[i],
                                                          requests[i]);
 
                 if (result.status != DECRYPTION_TRUSTEE_SUCCESS)

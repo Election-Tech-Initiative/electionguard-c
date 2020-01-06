@@ -41,6 +41,7 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
 struct Decryption_Trustee_new_r
 {
     enum Decryption_Trustee_status status;
+    uint32_t trustee_index;
     Decryption_Trustee decryptor;
 };
 

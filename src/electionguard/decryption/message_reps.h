@@ -15,15 +15,31 @@ struct decryption_share_rep
     struct cp_proof_rep cp_proofs[MAX_SELECTIONS];
 };
 
+/**
+ * A request for a trustee to calculate decryption fragments 
+ * for the missing index-based trustees
+ */
 struct decryption_fragments_request_rep
 {
+    /**
+     * The number of trustees defined in the election configuration
+     */
     uint32_t num_trustees;
+
+    /**
+     * Boolean array indicating the indexed trustees 
+     * for whom this request should calculate  decryption fragments
+     */
     bool requested[MAX_TRUSTEES];
 };
 
 struct decryption_fragments_rep
 {
     uint32_t trustee_index;
+
+    /**
+     * The number of trustees defined in the election configuration
+     */
     uint32_t num_trustees;
     uint32_t num_selections;
     bool requested[MAX_TRUSTEES];

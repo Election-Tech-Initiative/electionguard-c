@@ -73,8 +73,18 @@ Decryption_Coordinator_all_shares_received(Decryption_Coordinator c);
 struct Decryption_Coordinator_all_shares_received_r
 {
     enum Decryption_Coordinator_status status;
+
+    /**
+     * The number of trustees defined in the election configuration
+     */
     uint32_t num_trustees;
+
+    /**
+     * For each indexed trustee, defines if an outstanding request exists 
+     * for the trustee to decrypt a fragment for a missing trustee
+     */
     bool request_present[MAX_TRUSTEES];
+
     struct decryption_fragments_request requests[MAX_TRUSTEES];
 };
 

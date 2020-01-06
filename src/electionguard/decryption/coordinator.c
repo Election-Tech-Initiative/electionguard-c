@@ -155,7 +155,8 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator c,
     return status;
 }
 
-static uint32_t Decryption_Coordinator_num_anounced(Decryption_Coordinator c)
+static uint32_t 
+Decryption_Coordinator_num_anounced(Decryption_Coordinator c)
 {
     uint32_t count = 0;
     for (uint32_t i = 0; i < c->num_trustees; i++)
@@ -165,21 +166,23 @@ static uint32_t Decryption_Coordinator_num_anounced(Decryption_Coordinator c)
     return count;
 }
 
-static void
-Decryption_Coordinator_fill_missing_indices(Decryption_Coordinator c,
-                                            bool *indices)
+static void 
+Decryption_Coordinator_fill_missing_indices(
+    Decryption_Coordinator c, bool *indices)
 {
     for (uint32_t i = 0; i < c->num_trustees; i++)
         indices[i] = !c->anounced[i];
 }
 
-static bool Decryption_Coordinator_fill_requests(
-    Decryption_Coordinator c, bool *request_present,
+static bool 
+Decryption_Coordinator_fill_requests(
+    Decryption_Coordinator c, bool *request_present, 
     struct decryption_fragments_request *requests)
 {
     bool ok = true;
 
-    // The number of trustees from who've we requested the missing trustee decryption_fragments
+    // The number of trustees from who've we requested 
+    // the missing trustee decryption_fragments
     uint32_t num_requested = 0;
 
     for (uint32_t i = 0; i < c->num_trustees && ok; i++)
@@ -194,11 +197,16 @@ static bool Decryption_Coordinator_fill_requests(
 
             if (num_requested < c->threshold)
             {
+                // detmine which trustees have not announced
+                // and fill in the 'requested' array
                 Decryption_Coordinator_fill_missing_indices(
                     c, request_rep.requested);
                 num_requested++;
             }
             else
+                // we have met the threshold so we do not need
+                // to request fragments from any remaining trustees
+                // who have aanounced
                 memset(request_rep.requested, false,
                        c->num_trustees * sizeof(bool));
 
@@ -274,7 +282,8 @@ Decryption_Coordinator_all_shares_received(Decryption_Coordinator c)
     return result;
 }
 
-enum Decryption_Coordinator_status Decryption_Coordinator_receive_fragments(
+enum Decryption_Coordinator_status 
+Decryption_Coordinator_receive_fragments(
     Decryption_Coordinator c, struct decryption_fragments decryption_fragments)
 {
     enum Decryption_Coordinator_status status = DECRYPTION_COORDINATOR_SUCCESS;
@@ -355,7 +364,8 @@ enum Decryption_Coordinator_status Decryption_Coordinator_receive_fragments(
     return status;
 }
 
-static bool Decryption_Coordinator_all_trustees_seen_or_compensated(
+static bool 
+Decryption_Coordinator_all_trustees_seen_or_compensated(
     Decryption_Coordinator c)
 {
     bool ok = true;
@@ -369,9 +379,8 @@ static bool Decryption_Coordinator_all_trustees_seen_or_compensated(
 }
 
 enum Decryption_Coordinator_status
-Decryption_Coordinator_all_fragments_received(Decryption_Coordinator c,
-                                              FILE *out,
-                                              uint32_t *tally_results_array)
+Decryption_Coordinator_all_fragments_received(
+    Decryption_Coordinator c, FILE *out, uint32_t *tally_results_array)
 {
     enum Decryption_Coordinator_status status = DECRYPTION_COORDINATOR_SUCCESS;
 

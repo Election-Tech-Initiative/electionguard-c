@@ -61,7 +61,7 @@ bool API_TallyVotes(struct api_config config,
         ok = tally_ballots(ballots_filename);
         
     if (ok)
-        ok = decrypt_tally_shares(num_decrypting_trustees);
+        ok = decrypt_tally_shares();
 
     if (ok)
         ok = request_missing_trustee_tally_shares(request_present, requests);

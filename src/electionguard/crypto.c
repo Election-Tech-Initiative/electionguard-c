@@ -22,11 +22,16 @@ void Crypto_hash_reduce(struct hash *out, raw_hash bytes)
     mod_q(out->digest, out->digest);
 }
 
+// NOTE: Currently no error handling is possible for this function call. Consider changing the function signature in the future
+// 
 void Crypto_hash_update_bignum_q(SHA2_CTX *context, mpz_t num)
 {
     uint8_t *buf = (uint8_t*)export_to_256(num);
-    SHA256Update(context, buf, 256/8);
-    free(buf);
+    if (buf != NULL)
+    {
+        SHA256Update(context, buf, 256 / 8);
+        free(buf);
+    }
 }
 
 void Crypto_hash_update_bignum_p(SHA2_CTX *context, mpz_t num)
@@ -938,6 +943,11 @@ void Crypto_encryption_homomorphic_add(struct encryption_rep *out,
 int mpz_t_fscan(FILE *in, mpz_t out)
 {
     uint4096 tmp = malloc(sizeof(struct uint4096_s));
+    if (tmp == NULL)
+    {
+        return 0;
+    }
+
     int res = uint4096_fscan(in, tmp);
     import_uint4096(out, tmp);
     free(tmp);
@@ -946,9 +956,14 @@ int mpz_t_fscan(FILE *in, mpz_t out)
 
 int mpz_t_fprint(FILE *out, const mpz_t z)
 {
+    int ret = 0;
     uint4096 tmp = export_to_uint4096(z);
-    int ret = uint4096_fprint(out, tmp);
-    free(tmp);
+    if (tmp != NULL)
+    {
+        ret = uint4096_fprint(out, tmp);
+        free(tmp);
+    }
+
     return ret;
 }
 
@@ -975,8 +990,22 @@ Crypto_encrypted_ballot_new(uint32_t num_selections, uint64_t id)
     result.result.num_selections = num_selections;
     result.result.selections =
         malloc(num_selections * sizeof(*result.result.selections));
+    if (result.result.selections == NULL)
+    {
+        // handle insufficient memory error
+        result.status = CRYPTO_INSUFFICIENT_MEMORY;
+    }
+
     result.result.dis_proof =
         malloc(num_selections * sizeof(*result.result.dis_proof));
+    if (result.result.dis_proof == NULL)
+    {
+        free(result.result.selections); // to avoid memory leak
+        result.result.selections = NULL;
+
+        // handle insufficient memory error
+        result.status = CRYPTO_INSUFFICIENT_MEMORY;
+    }
 
     for (uint32_t i = 0; i < num_selections; i++)
     {

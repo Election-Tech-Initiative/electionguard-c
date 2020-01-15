@@ -232,6 +232,11 @@ void div_mod_q(mpz_t res, const mpz_t num, const mpz_t den)
 uint64_t *export_to_64_t(const mpz_t v, int ct)
 {
     uint64_t *result = malloc(sizeof(uint64_t) * ct);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+
     size_t written;
     // print_base16(v);
     mpz_export(result, &written, 1, 8, 0, 0, v);
@@ -244,8 +249,18 @@ uint64_t *export_to_64_t(const mpz_t v, int ct)
 // ct are written.
 uint64_t *export_to_64_t_pad(const mpz_t v, int ct){
     uint64_t *result = malloc(sizeof(uint64_t) * ct);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+
     memset(result, 0, sizeof(uint64_t)*ct);
     uint64_t *tmp = malloc(sizeof(uint64_t) * ct);
+    if (tmp == NULL)
+    {
+        free(result);
+        return NULL;
+    }
 
     size_t written;
     mpz_export(tmp, &written, 1, 8, 0, 0, v);
@@ -266,6 +281,10 @@ uint64_t *export_to_256(mpz_t v) { return export_to_64_t(v, 4); }
 uint4096 export_to_uint4096(mpz_t v)
 {
     uint4096 result = malloc(sizeof(struct uint4096_s));
+    if (result == NULL)
+    {
+        return NULL;
+    }
 
     size_t written;
     mpz_export(&result->words, &written, 1, 8, 0, 0, v);

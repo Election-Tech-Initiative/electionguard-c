@@ -303,6 +303,13 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
         SHA2_CTX context;
         uint8_t *digest_buffer = malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
 
+        if (digest_buffer == NULL)
+        {
+            // handle insufficient memory error
+            balotR.status = VOTING_ENCRYPTER_INSUFFICIENT_MEMORY;
+            return balotR;
+        }
+
         SHA256Init(&context);
         SHA256Update(&context, balotR.message.bytes, balotR.message.len);
         SHA256Final(digest_buffer, &context);

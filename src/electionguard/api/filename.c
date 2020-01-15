@@ -36,7 +36,7 @@ bool generate_unique_filename(char *path_in, char *prefix_in, char* default_pref
 
 
 #ifdef __USE_SECURE_APIS__
-    path_len = strlen_s(path, FILENAME_MAX);
+    path_len = strnlen_s(path, FILENAME_MAX);
     if (path_len == 0 || path_len == FILENAME_MAX)
     {
         ok = false;

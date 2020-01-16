@@ -1,8 +1,6 @@
 #include "api/filename.h"
 
-#ifdef _WIN32
-#define __USE_SECURE_APIS__
-#elif __STDC_LIB_EXT1__
+#if defined(__STDC_WANT_SECURE_LIB__) || defined(__STDC_LIB_EXT1__)
 #define __USE_SECURE_APIS__
 #endif
 
@@ -14,6 +12,7 @@ bool generate_unique_filename(char *path_in, char *prefix_in, char* default_pref
     char path[FILENAME_MAX];
     char *inUsePrefix = default_prefix;
     size_t path_len = 0;
+    size_t prefix_size = 0;
 
     // if path is provided, check the last char in the string to make sure it has the appropriate slash
 #ifdef __USE_SECURE_APIS__
@@ -79,7 +78,7 @@ bool generate_unique_filename(char *path_in, char *prefix_in, char* default_pref
     }
 
 	// if prefix is provided for filename, use it, otherwise use the default
-    size_t prefix_size = strlen(prefix_in);
+    prefix_size = strlen(prefix_in);
     if (prefix_size > 0)
         inUsePrefix = prefix_in;
     else

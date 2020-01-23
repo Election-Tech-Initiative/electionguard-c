@@ -1,3 +1,4 @@
+#include "serialize/crypto.h"
 #include "serialize/voting.h"
 #include "serialize/builtins.h"
 
@@ -35,4 +36,19 @@ void Serialize_read_ballot_identifier(struct serialize_state *state,
                                       struct ballot_identifier_rep *data)
 {
     Serialize_read_uint64(state, &data->id);
+}
+
+bool Serialize_deserialize_register_ballot_message(struct register_ballot_message *ballot_message, 
+                                                    struct encrypted_ballot_rep *out_ballot_rep)
+{
+    struct serialize_state state = {
+            .status = SERIALIZE_STATE_READING,
+            .len = ballot_message->len,
+            .offset = 0,
+            .buf = (uint8_t *)ballot_message->bytes,
+        };
+
+    Serialize_read_encrypted_ballot(&state, out_ballot_rep);
+
+    return state.status == SERIALIZE_STATE_READING;
 }

@@ -242,7 +242,7 @@ void Crypto_encryption_rep_copy(struct encryption_rep *dst,
                                 struct encryption_rep *src);
 
 struct Crypto_encrypted_ballot_new_r
-Crypto_encrypted_ballot_new(uint32_t num_selections, uint64_t id);
+Crypto_encrypted_ballot_new(uint32_t num_selections, uint64_t ballot_id);
 void Crypto_encrypted_ballot_free(struct encrypted_ballot_rep *ballot);
 
 #endif /* __CRYPTO_REPS_H__ */

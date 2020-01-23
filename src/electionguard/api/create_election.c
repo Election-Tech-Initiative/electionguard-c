@@ -121,6 +121,8 @@ bool API_CreateElection(struct api_config *config,
             KeyCeremony_Trustee_free(trustees[i]);
     }
 
+    // Key Ceremony Coordinator is only used in 
+    // this part of the workflow so free it
     if (coordinator != NULL)
         KeyCeremony_Coordinator_free(coordinator);
 
@@ -134,7 +136,7 @@ void API_CreateElection_free(struct joint_public_key joint_key,
 {
     for (uint32_t i = 0; i < api_config.num_trustees; i++)
     {
-        if (trustee_states[i].bytes != NULL)
+        if (trustee_states != NULL && trustee_states[i].bytes != NULL)
         {
             free((void *)trustee_states[i].bytes);
             trustee_states[i].bytes = NULL;

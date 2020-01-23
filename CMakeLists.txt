@@ -22,11 +22,13 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/filename.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/create_election.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/encrypt_ballot.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/load_ballots.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/record_ballots.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/tally_votes.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto_reps.h
+    ${PROJECT_SOURCE_DIR}/src/electionguard/voting/ballot_collection.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/coordinator.c
-    ${PROJECT_SOURCE_DIR}/src/electionguard/voting/num_ballots.h
+    ${PROJECT_SOURCE_DIR}/src/electionguard/voting/messages.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/message_reps.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/nouns.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/tracker.c
@@ -65,9 +67,11 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/file.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/directory.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/directory.h
+    ${PROJECT_SOURCE_DIR}/src/electionguard/uthash.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/config.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/create_election.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/encrypt_ballot.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/load_ballots.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/record_ballots.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/tally_votes.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/file.h
@@ -109,8 +113,8 @@ if (MINGW)
     set_target_properties(electionguard PROPERTIES PREFIX "")
 endif()
 
-# Set the public include directory depending on if the target is being exported
-# or installed
+# Set the public include directory depending on 
+# if the target is being exported or installed
 target_include_directories(electionguard
     SYSTEM PUBLIC
         $<INSTALL_INTERFACE:include>

@@ -95,14 +95,16 @@ bool API_TallyVotes(struct api_config config,
     }
 
     Crypto_parameters_free();
-
+    
     return ok;
 }
 
 void API_TallyVotes_free(char *output_filename)                                       
 {
     if (output_filename != NULL)
+    {
         free(output_filename);
+    }
 }                                                            
 
 bool initialize_coordinator(void)
@@ -293,31 +295,48 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
 {
     bool ok = true;
     char *default_prefix = "electionguard_tally-";
-    *output_filename = malloc(FILENAME_MAX * sizeof(char));
+    *output_filename = malloc(FILENAME_MAX * + 1);
     ok = generate_unique_filename(export_path, filename_prefix, default_prefix, *output_filename);   
 #ifdef DEBUG_PRINT 
     printf("API_TALLYVOTES :: generated unique filename for export at \"%s\"\n", *output_filename);
 #endif
 
-    if (ok) {
+    if (ok && !Directory_exists(export_path)) 
+    {
         ok = create_directory(export_path);
     }
 
     if (ok)
     {
         FILE *out = fopen(*output_filename, "w+");
+        if (out == NULL)
+        {
+            printf("API_TallyVotes: error accessing file\n");
+            return false;
+        }
 
         enum Decryption_Coordinator_status status =
             Decryption_Coordinator_all_fragments_received(coordinator, out, tally_results_array);
 
         if (status != DECRYPTION_COORDINATOR_SUCCESS)
+        {
             ok = false;
+        }
 
         if (out != NULL)
         {
             fclose(out);
             out = NULL;
         }
+    }
+
+    if (!ok)
+    {
+
+#ifdef DEBUG_PRINT 
+        printf("API_TallyVotes: error exporting to: %s\n", *output_filename);
+#endif
+
     }
 
     return ok;

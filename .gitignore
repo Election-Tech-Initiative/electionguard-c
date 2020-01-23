@@ -34,3 +34,7 @@ _deps
 ElectionGuardConfig.cmake
 *_build/
 ballots/
+
+ballots_encrypter/
+
+tallies/

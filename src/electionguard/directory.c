@@ -68,3 +68,14 @@ bool create_directory(const char *path)
 
     return true;
 }
+
+bool Directory_exists(const char *path)
+{
+    struct stat stats = {0};
+
+    if (stat(path, &stats) == 0 && S_ISDIR(stats.st_mode)) 
+    {
+        return true;
+    }
+    return false;
+}

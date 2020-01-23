@@ -4,9 +4,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include <electionguard/max_values.h>
-#include <electionguard/voting/messages.h>
-
 struct ballot_tracker_rep
 {
     uint64_t id;
@@ -15,6 +12,11 @@ struct ballot_tracker_rep
 struct ballot_identifier_rep
 {
     uint64_t id;
+};
+
+struct external_identifer_rep
+{
+    char *id;
 };
 
 #endif /* __VOTING_MESSAGE_REPS_H__ */

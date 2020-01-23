@@ -8,47 +8,19 @@
 #include <electionguard/file.h>
 
 // Create a new file according to template
-FILE *File_new(char const *template)
+FILE *File_new(char const *path)
 {
-    bool ok = true;
-    int result_fd = -1;
-    FILE *result = NULL;
+    return fopen(path, "w+");
+}
 
-    #ifdef _WIN32
-        const char *mode = "w+";
-    #else
-        const char *mode = "w+x";
-    #endif
+FILE *File_open_for_read(const char *path)
+{
+    return fopen(path, "r");
+}
 
-    // Duplicate the template. It needs to be mutable for mkstemp.
-    char *template_mut = strdup(template);
-    if (template_mut == NULL)
-        ok = false;
-
-    // Create and open the temporary file
-    if (ok)
-    {
-        result_fd = mkstemp(template_mut);
-        if (-1 == result_fd)
-            ok = false;
-    }
-
-    // Convert the file descriptor to a FILE*
-    if (ok)
-    {
-        result = fdopen(result_fd, mode);
-        if (result == NULL)
-            ok = false;
-    }
-
-    // Free the duplicated template
-    if (template_mut != NULL)
-    {
-        free(template_mut);
-        template_mut = NULL;
-    }
-
-    return result;
+FILE *File_open_for_write(const char *path)
+{
+    return fopen(path, "a+");
 }
 
 // Close file
@@ -61,4 +33,18 @@ void File_close(FILE *file)
 void File_seek(FILE *file)
 {
     int seek_status = fseek(file, 0L, SEEK_SET);
+}
+
+bool File_exists(char const *path)
+{
+    FILE *file_pointer = File_open_for_read(path);
+    if (file_pointer == NULL)
+    {
+        printf("doesnt exist");
+        return false;
+    }
+
+    printf("exists");
+    fclose(file_pointer);
+    return true;
 }

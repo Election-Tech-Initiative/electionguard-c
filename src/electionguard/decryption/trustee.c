@@ -127,7 +127,7 @@ Decryption_Trustee_new(uint32_t num_trustees, uint32_t threshold,
 
 void Decryption_Trustee_free(Decryption_Trustee decryption_trustee)
 {
-    for (size_t i = 0; i < MAX_SELECTIONS; i++)
+    for (size_t i = 0; i < decryption_trustee->num_selections; i++)
     {
         Crypto_encryption_rep_free(&decryption_trustee->tallies[i]);
     }
@@ -199,8 +199,13 @@ static void Decryption_Trustee_accum_tally(Decryption_Trustee decryption_trustee
                                            struct encryption_rep *selections)
 {
     for (size_t i = 0; i < decryption_trustee->num_selections; i++)
-        Crypto_encryption_homomorphic_add(&decryption_trustee->tallies[i], &decryption_trustee->tallies[i],
-                                          &selections[i]);
+    {
+        Crypto_encryption_homomorphic_add(
+            &decryption_trustee->tallies[i], 
+            &decryption_trustee->tallies[i],
+            &selections[i]
+        );
+    }
 }
 
 enum Decryption_Trustee_status
@@ -208,6 +213,7 @@ Decryption_Trustee_tally_voting_record(Decryption_Trustee decryption_trustee, FI
 {
     enum Decryption_Trustee_status status = DECRYPTION_TRUSTEE_SUCCESS;
 
+    // get the number of ballots from the ballots file header
     uint64_t num_ballots;
     {
         int num_read = fscanf(in, "%" PRIu64 "\n", &num_ballots);
@@ -215,6 +221,7 @@ Decryption_Trustee_tally_voting_record(Decryption_Trustee decryption_trustee, FI
             status = DECRYPTION_TRUSTEE_IO_ERROR;
     }
 
+    //get the number of selections from the ballots file header
     uint64_t num_selections;
     {
         int num_read = fscanf(in, "%" PRIu64 "\n", &num_selections);
@@ -231,16 +238,28 @@ Decryption_Trustee_tally_voting_record(Decryption_Trustee decryption_trustee, FI
         bool cast;
         struct encryption_rep selections[MAX_SELECTIONS];
 
-        for (int j = 0; j < MAX_SELECTIONS; j++)
+        for (int j = 0; j < decryption_trustee->num_selections; j++)
         {
             Crypto_encryption_rep_new(&selections[j]);
         }
 
-        status = Decryption_Trustee_read_ballot(in, &ballot_id, &cast,
-                                                decryption_trustee->num_selections, selections);
+        status = Decryption_Trustee_read_ballot(
+            in,
+            &ballot_id, 
+            &cast,
+            decryption_trustee->num_selections, 
+            selections
+        );
 
         if (status == DECRYPTION_TRUSTEE_SUCCESS && cast)
+        {
             Decryption_Trustee_accum_tally(decryption_trustee, selections);
+        }
+
+        for (int j = 0; j < decryption_trustee->num_selections; j++)
+        {
+            Crypto_encryption_rep_free(&selections[j]);
+        }
     }
 
     return status;

@@ -104,7 +104,9 @@ void Crypto_parameters_new()
 void Crypto_parameters_free()
 {
     mpz_clear(p);
+    mpz_clear(q);
     mpz_clear(generator);
+    mpz_clear(bignum_one);
 }
 
 void print_base16(const mpz_t z)

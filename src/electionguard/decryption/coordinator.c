@@ -70,7 +70,10 @@ Decryption_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
     return result;
 }
 
-void Decryption_Coordinator_free(Decryption_Coordinator c) { free(c); }
+void Decryption_Coordinator_free(Decryption_Coordinator c) 
+{ 
+    free(c); 
+}
 
 enum Decryption_Coordinator_status
 Decryption_Coordinator_receive_share(Decryption_Coordinator c,
@@ -150,6 +153,13 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator c,
             }
             c->tallies_initialized = true;
         }
+    }
+
+    //free 
+    for (uint32_t i = 0; i < share_rep.num_tallies; i++)
+    {
+        Crypto_encryption_rep_free(&share_rep.tally_share[i]);
+        Crypto_cp_proof_free(&share_rep.cp_proofs[i]);
     }
 
     return status;

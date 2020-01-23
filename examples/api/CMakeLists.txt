@@ -17,7 +17,6 @@ add_executable(api
     ${PROJECT_SOURCE_DIR}/main.c
 )
 
-
 find_package(ElectionGuard REQUIRED)
 
 find_package(GMP REQUIRED)
@@ -30,7 +29,6 @@ if(APPLE)
 else()
     target_link_libraries(api electionguard gmp)
 endif()
-
 
 if (WIN32)
     target_link_libraries(api Bcrypt)

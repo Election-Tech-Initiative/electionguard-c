@@ -8,6 +8,8 @@
 #include <string.h>
 #include <time.h>
 
+bool generate_filename(char *path_in, char *prefix_in, char* default_prefix, char *filename_out);
+
 bool generate_unique_filename(char *path_in, char *prefix_in, char* default_prefix, char *filename_out);
 
 #endif /* __API_FILENAME_H__ */

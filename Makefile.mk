@@ -41,7 +41,7 @@ endif
 
 build-release: clean
 ifeq ($(OPERATING_SYSTEM),Windows)
-	cmake -S . -B build -G "MSYS Makefiles" -DBUILD_SHARED_LIBS=ON
+	cmake -S . -B build -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
 	cmake --build build
 else
 	if [ ! -d "build" ]; then mkdir build; fi

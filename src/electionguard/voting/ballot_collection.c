@@ -42,6 +42,11 @@ enum Ballot_Collection_result Ballot_Collection_register_ballot(char *external_i
     }
 
     new_ballot = (struct ballot_state *)malloc(sizeof *new_ballot);
+    if (new_ballot == NULL)
+    {
+        return BALLOT_COLLECTION_ERROR_INSUFFICIENT_MEMORY;
+    }
+
     new_ballot->external_identifier = external_identifier;
     new_ballot->registered_index = registered_index;
     new_ballot->registered = true;
@@ -153,6 +158,11 @@ enum Ballot_Collection_result Ballot_Collection_update(
 
     // copy the existing state to the new state
     new_ballot_state = (struct ballot_state *)malloc(sizeof *new_ballot_state);
+    if (new_ballot_state == NULL)
+    {
+        return BALLOT_COLLECTION_ERROR_INSUFFICIENT_MEMORY;
+    }
+
     memcpy(new_ballot_state, existing_ballot, sizeof(ballot_state));
     new_ballot_state->cast = cast;
     new_ballot_state->spoiled = spoiled;

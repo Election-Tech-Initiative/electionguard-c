@@ -296,6 +296,12 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
     bool ok = true;
     char *default_prefix = "electionguard_tally-";
     *output_filename = malloc(FILENAME_MAX * + 1);
+    if (output_filename == NULL)
+    {
+        ok = false;
+        return ok;
+    }
+    
     ok = generate_unique_filename(export_path, filename_prefix, default_prefix, *output_filename);   
 #ifdef DEBUG_PRINT 
     printf("API_TALLYVOTES :: generated unique filename for export at \"%s\"\n", *output_filename);

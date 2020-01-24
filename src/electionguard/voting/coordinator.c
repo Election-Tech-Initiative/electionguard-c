@@ -198,6 +198,11 @@ Voting_Coordinator_register_ballot(Voting_Coordinator coordinator,
     // Reconstruct the ballot tracker    
     SHA2_CTX context;
     uint8_t *digest_buffer = malloc(sizeof(uint8_t) * SHA256_DIGEST_LENGTH);
+    if (digest_buffer == NULL)
+    {
+        // handle insufficient memory error
+        return VOTING_COORDINATOR_INSUFFICIENT_MEMORY;
+    }
 
     SHA256Init(&context);
     SHA256Update(&context, message.bytes, message.len);
@@ -526,6 +531,10 @@ Voting_Coordinator_import_encrypted_ballots(Voting_Coordinator coordinator,
     for (uint32_t i = 0; i < count && load_status == VOTING_COORDINATOR_SUCCESS; i++) {
 
         out_external_identifiers[i] = malloc(MAX_EXTERNAL_ID_LENGTH*sizeof(char));
+        if (out_external_identifiers[i] == NULL)
+        {
+            load_status = VOTING_COORDINATOR_INSUFFICIENT_MEMORY;
+        }
         
         // create an encryption representation
         struct encryption_rep selections[num_selections];

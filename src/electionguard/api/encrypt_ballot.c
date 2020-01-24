@@ -143,6 +143,12 @@ bool export_ballot(char *export_path, char *filename_prefix, char **output_filen
     bool ok = true;
     char *default_prefix = "electionguard_encrypted_ballots-";
     *output_filename = malloc(FILENAME_MAX + 1);
+    if (output_filename == NULL)
+    {
+        ok = false;
+        return ok;
+    }
+    
     ok = generate_filename(export_path, filename_prefix, default_prefix, *output_filename);
 #ifdef DEBUG_PRINT 
     printf("API_EncryptBallots: generated filename for export at \"%s\"\n", *output_filename); 

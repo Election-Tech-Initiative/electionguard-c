@@ -152,17 +152,8 @@ install(
 
 add_subdirectory(docs)
 
-file(MAKE_DIRECTORY  "${CMAKE_CURRENT_BINARY_DIR}/simple_build")
+file(MAKE_DIRECTORY  "${CMAKE_CURRENT_BINARY_DIR}/api_build")
 set(CMAKE_CONFIGURATION_TYPES "Debug" CACHE STRING "" FORCE)
-
-add_test(NAME build_simple
-   COMMAND "${CMAKE_COMMAND}"
-      -E env ElectionGuard_DIR=${CMAKE_CURRENT_BINARY_DIR}/ElectionGuard
-      "${CMAKE_CTEST_COMMAND}"
-        --build-and-test "${PROJECT_SOURCE_DIR}/examples/simple" "${CMAKE_CURRENT_BINARY_DIR}/simple_build"
-        --build-generator ${CMAKE_GENERATOR}
-        --test-command simple
-)
 
 add_test(NAME build_api
    COMMAND "${CMAKE_COMMAND}"

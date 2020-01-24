@@ -6,5 +6,5 @@ let
   };
 in with import nixpkgs {}; rec {
   electionguard = callPackages ./derivation.nix { };
-  simple = callPackages ./examples/simple { inherit electionguard; };
+  api = callPackages ./examples/api { inherit electionguard; };
 }

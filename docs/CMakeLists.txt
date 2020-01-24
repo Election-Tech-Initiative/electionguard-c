@@ -41,10 +41,16 @@ IF(BUILD_DOCUMENTATION)
       ${CMAKE_CURRENT_SOURCE_DIR}/examples.rst
       ${CMAKE_CURRENT_SOURCE_DIR}/voting.rst
       ${CMAKE_CURRENT_SOURCE_DIR}/keyceremony.rst
-      ${CMAKE_CURRENT_SOURCE_DIR}/examples/simple.rst
+      ${CMAKE_CURRENT_SOURCE_DIR}/examples/api.rst
       ${CMAKE_CURRENT_SOURCE_DIR}/api/index.rst
       ${CMAKE_CURRENT_SOURCE_DIR}/api/crypto.rst
       ${CMAKE_CURRENT_SOURCE_DIR}/api/trustee_state.rst
+      ${CMAKE_CURRENT_SOURCE_DIR}/api/api/config.rst
+      ${CMAKE_CURRENT_SOURCE_DIR}/api/api/create_election.rst
+      ${CMAKE_CURRENT_SOURCE_DIR}/api/api/encrypt_ballot.rst
+      ${CMAKE_CURRENT_SOURCE_DIR}/api/api/load_ballots.rst
+      ${CMAKE_CURRENT_SOURCE_DIR}/api/api/record_ballots.rst
+      ${CMAKE_CURRENT_SOURCE_DIR}/api/api/tally_votes.rst
       ${CMAKE_CURRENT_SOURCE_DIR}/api/voting/coordinator.rst
       ${CMAKE_CURRENT_SOURCE_DIR}/api/voting/encrypter.rst
       ${CMAKE_CURRENT_SOURCE_DIR}/api/voting/messages.rst

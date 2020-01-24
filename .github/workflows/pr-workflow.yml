@@ -22,14 +22,14 @@ jobs:
         cmake --version
         cmake -S . -B build
         cmake --build build
-    - name: 'Build Simple Election'
+    - name: 'Build API Sample Election'
       run: | 
-        ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/simple -B simple_build
-        cmake --build simple_build --target simple
-    - name: 'Test Simple Election'
+        ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/api -B api_build
+        cmake --build api_build --target api
+    - name: 'Test API Sample Election'
       run: | 
-        cd simple_build
-        ./simple
+        cd api_build
+        ./api
   windows_build:
     name: 'Windows Build'
     runs-on: 'windows-latest'
@@ -55,15 +55,15 @@ jobs:
         cmake --version
         cmake -S . -B build -G "MSYS Makefiles"
         cmake --build build
-    - name: 'Build Simple Election'
+    - name: 'Build API Sample Election'
       run: |
         $env:CMAKE_PREFIX_PATH="./build/ElectionGuard"
-        cmake -S examples/simple -B simple_build -G "MSYS Makefiles"
-        cmake --build simple_build --target simple
-    - name: 'Test Simple Election'
+        cmake -S examples/api -B api_build -G "MSYS Makefiles"
+        cmake --build api_build --target api
+    - name: 'Test API Sample Election'
       run: | 
-        cd simple_build
-        $outcome = Invoke-Expression ".\simple.exe"
+        cd api_build
+        $outcome = Invoke-Expression ".\api.exe"
         echo $outcome
   macos_build:
     name: 'MacOS Build'
@@ -82,11 +82,11 @@ jobs:
         cmake --version
         cmake -S . -B build
         cmake --build build
-    - name: 'Build Simple Election'
+    - name: 'Build API Sample Election'
       run: | 
-        ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/simple -B simple_build
-        cmake --build simple_build --target simple
-    - name: 'Test Simple Election'
+        ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/api -B api_build
+        cmake --build api_build --target api
+    - name: 'Test API Sample Election'
       run: | 
-        cd simple_build
-        ./simple
+        cd api_build
+        ./api

@@ -94,9 +94,14 @@ int main()
     
     //generate a unique file name
     time_t now = time(NULL);
-    struct tm local_time = *localtime(&now);
+    struct tm *local_time = 0;
+    local_time = localtime(&now);
+    if (local_time == 0)
+    {
+        ok = false;
+    }
     sprintf(encrypted_output_prefix, "%s_%d_%d_%d", "encrypted-ballots", 
-        local_time.tm_year + 1900, local_time.tm_mon + 1, local_time.tm_mday);
+        local_time->tm_year + 1900, local_time->tm_mon + 1, local_time->tm_mday);
 
     if (ok)
     {
@@ -250,7 +255,7 @@ int main()
         char output_prefix[50];
 
         sprintf(output_prefix, "%s_%d_%d_%d", "registered-ballots", 
-        local_time.tm_year + 1900, local_time.tm_mon + 1, local_time.tm_mday);
+        local_time->tm_year + 1900, local_time->tm_mon + 1, local_time->tm_mday);
 
         ok = API_RecordBallots(
             config.num_selections, 
@@ -302,7 +307,7 @@ int main()
         char output_prefix[50];
 
         sprintf(output_prefix, "%s_%d_%d_%d", "tally", 
-        local_time.tm_year + 1900, local_time.tm_mon + 1, local_time.tm_mday);
+        local_time->tm_year + 1900, local_time->tm_mon + 1, local_time->tm_mday);
 
         // copy the threshold number of trustees needed to decrypt
         struct trustee_state threshold_trustee_states[MAX_TRUSTEES];

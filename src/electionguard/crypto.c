@@ -1031,8 +1031,5 @@ void Crypto_encrypted_ballot_free(struct encrypted_ballot_rep *ballot)
         Crypto_dis_proof_free(ballot->dis_proof);
     }
 
-    if (&ballot->cp_proof != NULL)
-    {
-        Crypto_cp_proof_free(&ballot->cp_proof);
-    }
+    Crypto_cp_proof_free(&ballot->cp_proof);
 }

@@ -6,7 +6,7 @@
 struct ballot_state *ballot_box = NULL;
 
 static enum Ballot_Collection_result Ballot_Collection_update(
-    struct ballot_state *ballot_box, char *external_identifier, bool cast, bool spoiled, char **out_tracker);
+    char *external_identifier, bool cast, bool spoiled, char **out_tracker);
 static enum Ballot_Collection_result Ballot_Collection_assert_can_mutate_state(
     struct ballot_state *existing_ballot);
 
@@ -67,12 +67,12 @@ enum Ballot_Collection_result Ballot_Collection_register_ballot(char *external_i
 
 enum Ballot_Collection_result Ballot_Collection_mark_cast(char *external_identifier, char **out_tracker)
 {
-    return Ballot_Collection_update(ballot_box, external_identifier, true, false, out_tracker);
+    return Ballot_Collection_update(external_identifier, true, false, out_tracker);
 }
 
 enum Ballot_Collection_result Ballot_Collection_mark_spoiled(char *external_identifier, char **out_tracker)
 {
-    return Ballot_Collection_update(ballot_box, external_identifier, false, true, out_tracker);
+    return Ballot_Collection_update(external_identifier, false, true, out_tracker);
 }
 
 enum Ballot_Collection_result Ballot_Collection_get_ballot(char *external_identifier, struct ballot_state **ballot)
@@ -130,7 +130,7 @@ enum Ballot_Collection_result Ballot_Collection_remove_all()
 }
 
 enum Ballot_Collection_result Ballot_Collection_update(
-    struct ballot_state *ballot_box, char *external_identifier, bool cast, bool spoiled, char **out_tracker)
+    char *external_identifier, bool cast, bool spoiled, char **out_tracker)
 {
     if (cast == spoiled)
     {

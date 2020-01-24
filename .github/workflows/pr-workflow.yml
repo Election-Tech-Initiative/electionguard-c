@@ -62,8 +62,8 @@ jobs:
         cmake --build api_build --target api
     - name: 'Test API Sample Election'
       run: | 
-        cd api_build
-        $outcome = Invoke-Expression ".\api.exe"
+        $env:Path+=";.\build\"
+        $outcome = Invoke-Expression ".\api_build\api.exe"
         echo $outcome
   macos_build:
     name: 'MacOS Build'

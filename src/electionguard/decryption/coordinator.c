@@ -164,7 +164,6 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator c,
     for (uint32_t i = 0; i < share_rep.num_tallies; i++)
     {
         Crypto_encryption_rep_free(&share_rep.tally_share[i]);
-        Crypto_cp_proof_free(&share_rep.cp_proofs[i]);
     }
 
     return status;

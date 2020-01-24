@@ -332,6 +332,7 @@ Decryption_Trustee_compute_share(Decryption_Trustee decryption_trustee)
         for (size_t i = 0; i < decryption_trustee->num_selections; i++)
         {
             Crypto_encryption_rep_free(&share_rep.tally_share[i]);
+            Crypto_cp_proof_free(&share_rep.cp_proofs[i]);
         }
     }
 

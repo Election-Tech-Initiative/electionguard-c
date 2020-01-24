@@ -14,33 +14,55 @@ void Serialize_write_uint64_ts(struct serialize_state *state, const mpz_t data,
                                int ct)
 {
     uint64_t *tmp = export_to_64_t(data, ct);
-    for (uint32_t i = 0; i < ct; i++)
+    if (tmp != NULL)
     {
-        Serialize_write_uint64(state, &tmp[i]);
+        for (uint32_t i = 0; i < ct; i++)
+        {
+            Serialize_write_uint64(state, &tmp[i]);
+        }
+        free(tmp);
     }
-    free(tmp);
+    else
+    {
+        state->status = SERIALIZE_STATE_INSUFFICIENT_MEMORY;
+	}
 }
 
 void Serialize_write_uint64_ts_pad(struct serialize_state *state, const mpz_t data,
                                int ct)
 {
     uint64_t *tmp = export_to_64_t_pad(data, ct);
-    for (uint32_t i = 0; i < ct; i++)
+    if (tmp != NULL)
     {
-        Serialize_write_uint64(state, &tmp[i]);
+        for (uint32_t i = 0; i < ct; i++)
+        {
+            Serialize_write_uint64(state, &tmp[i]);
+        }
+        free(tmp);
     }
-    free(tmp);
+    else
+    {
+        state->status = SERIALIZE_STATE_INSUFFICIENT_MEMORY;
+    }
 }
 
 void Serialize_read_uint64_ts(struct serialize_state *state, mpz_t data, int ct)
 {
     uint64_t *tmp = malloc(sizeof(uint64_t) * ct);
-    for (uint32_t i = 0; i < ct; i++)
+    if (tmp != NULL)
     {
-        Serialize_read_uint64(state, &tmp[i]);
+        for (uint32_t i = 0; i < ct; i++)
+        {
+            Serialize_read_uint64(state, &tmp[i]);
+        }
+        import_uint64_ts(data, tmp, ct);
+        free(tmp);
     }
-    import_uint64_ts(data, tmp, ct);
-    free(tmp);
+    else
+    {
+        // handle insufficient memory error
+        state->status = SERIALIZE_STATE_INSUFFICIENT_MEMORY;
+    }
 }
 
 void Serialize_reserve_uint4096(struct serialize_state *state,
@@ -57,16 +79,24 @@ void Serialize_write_uint4096(struct serialize_state *state, const mpz_t data)
 void Serialize_read_uint4096(struct serialize_state *state, mpz_t data)
 {
     uint4096 tmp = malloc(sizeof(struct uint4096_s));
-    for (uint32_t i = 0; i < UINT4096_WORD_COUNT; i++)
+    if (tmp != NULL)
     {
-        Serialize_read_uint64(state, &tmp->words[i]);
+        for (uint32_t i = 0; i < UINT4096_WORD_COUNT; i++)
+        {
+            Serialize_read_uint64(state, &tmp->words[i]);
+        }
+        import_uint4096(data, tmp);
+        free(tmp);
     }
-    import_uint4096(data, tmp);
-    free(tmp);
+    else
+    {
+        // handle insufficient memory error
+        state->status = SERIALIZE_STATE_INSUFFICIENT_MEMORY;
+    }
 }
 
 void Serialize_reserve_uint256(struct serialize_state *state,
-                                const_uint4096 data)
+                               const_uint4096 data)
 {
     Serialize_reserve_uint64_ts(state, data, 4);
 }
@@ -96,22 +126,37 @@ void Serialize_reserve_hash(struct serialize_state *state)
 void Serialize_write_hash(struct serialize_state *state, struct hash data)
 {
     uint64_t *tmp = export_to_256(data.digest);
-    for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH / 8; i++)
+    if (tmp != NULL)
     {
-        Serialize_write_uint64(state, &tmp[i]);
+        for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH / 8; i++)
+        {
+            Serialize_write_uint64(state, &tmp[i]);
+        }
+        free(tmp);
     }
-    free(tmp);
+    else
+    {
+        state->status = SERIALIZE_STATE_INSUFFICIENT_MEMORY;
+    }
 }
 
 void Serialize_read_hash(struct serialize_state *state, struct hash *data)
 {
     uint8_t *tmp = malloc(sizeof(uint8_t) * 32);
-    for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    if (tmp != NULL)
     {
-        Serialize_read_uint8(state, &tmp[i]);
+        for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH; i++)
+        {
+            Serialize_read_uint8(state, &tmp[i]);
+        }
+        Crypto_hash_reduce(data, tmp);
+        free(tmp);
     }
-    Crypto_hash_reduce(data, tmp);
-    free(tmp);
+    else
+    {
+        // handle insufficient memory error
+        state->status = SERIALIZE_STATE_INSUFFICIENT_MEMORY;
+    }
 }
 
 uint8_t *Serialize_reserve_write_hash(struct hash in)

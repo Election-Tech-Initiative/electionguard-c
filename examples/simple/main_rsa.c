@@ -37,25 +37,41 @@ bool rsa_string_message(rsa_private_key* ku, rsa_public_key* kp, mpz_t M, mpz_t 
     mpz_import(M, strlen(plaintext), 1, 1, 0, 0, plaintext);
     bn = mpz_get_str(NULL, 16, M);
     char *origin = malloc(strlen(bn) + 1);
-    memcpy(origin, bn, strlen(bn) + 1);
-    printf("origin is [%s]\n", bn);
+    if (origin != NULL)
+    {
+        memcpy(origin, bn, strlen(bn) + 1);
+        printf("origin is [%s]\n", bn);
+        free(bn);
+        RSA_Encrypt(C, M, kp);
+        bn = mpz_get_str(NULL, 16, C);
+        printf("encrypted is [%s]\n", bn);
+        free(bn);
+        RSA_Decrypt(DC, C, ku);
+        bn = mpz_get_str(NULL, 16, DC);
+        char *decrypt = malloc(strlen(bn) + 1);
+		if (decrypt != NULL)
+		{
+            memcpy(decrypt, bn, strlen(bn) + 1);
+            printf("decrypted is [%s]\n", bn);
+            mpz_export(buf, NULL, 1, 1, 0, 0, DC);
+            printf("As plaintext: %s\n", buf);
+            ok = strcmp(origin, decrypt) == 0;
+            assert(ok);
+            free(decrypt);
+        }
+        else
+        {
+            ok = false;
+        }
+
+        free(origin);
+    }
+    else
+    {
+        ok = false;
+    }
+
     free(bn);
-    RSA_Encrypt(C, M, kp);
-    bn = mpz_get_str(NULL, 16, C);
-    printf("encrypted is [%s]\n", bn);
-    free(bn);
-    RSA_Decrypt(DC, C, ku);
-    bn = mpz_get_str(NULL, 16, DC);
-    char *decrypt = malloc(strlen(bn) + 1);
-    memcpy(decrypt, bn, strlen(bn) + 1);
-    printf("decrypted is [%s]\n", bn);
-    free(bn);
-    mpz_export(buf, NULL, 1, 1, 0, 0, DC);
-    printf("As plaintext: %s\n", buf);
-    ok = strcmp(origin,decrypt)==0;
-    assert(ok);
-    free(origin);
-    free(decrypt);
     return ok;
 }
 
@@ -93,24 +109,40 @@ bool rsa_num_message(rsa_private_key* ku, rsa_public_key* kp, mpz_t M, mpz_t C,m
     mpz_import(M, (BLOCK_SIZE), 1, sizeof(buf[0]), 0, 0, buf);
     bn = mpz_get_str(NULL, 16, M);
     char *origin = malloc(strlen(bn) + 1);
-    memcpy(origin, bn, strlen(bn) + 1);
-    printf("origin is [%s]\n", bn);
-    free(bn);
-    RSA_Encrypt(C, M, kp);
-    bn = mpz_get_str(NULL, 16, C);
-    printf("encrypted is [%s]\n", bn);
-    free(bn);
-    RSA_Decrypt(DC, C, ku);
-    bn = mpz_get_str(NULL, 16, DC);
-    char *decrypt = malloc(strlen(bn) + 1);
-    memcpy(decrypt, bn, strlen(bn) + 1);
-    printf("decrypted is [%s]\n", bn);
-    free(bn);
-    ok = strcmp(origin,decrypt)==0;
-    assert(ok);
-    free(origin);
-    free(decrypt);
-    return ok;
+    if (origin != NULL)
+    {
+        memcpy(origin, bn, strlen(bn) + 1);
+        printf("origin is [%s]\n", bn);
+        free(bn);
+        RSA_Encrypt(C, M, kp);
+        bn = mpz_get_str(NULL, 16, C);
+        printf("encrypted is [%s]\n", bn);
+        free(bn);
+        RSA_Decrypt(DC, C, ku);
+        bn = mpz_get_str(NULL, 16, DC);
+        char *decrypt = malloc(strlen(bn) + 1);
+        if (decrypt != NULL)
+        {
+            memcpy(decrypt, bn, strlen(bn) + 1);
+            printf("decrypted is [%s]\n", bn);
+            ok = strcmp(origin,decrypt)==0;
+            assert(ok);
+            free(decrypt);
+        }
+        else
+        {
+            ok = false;
+        }
+
+        free(origin);
+    }
+    else
+    {
+        ok = false;
+	}
+
+	free(bn);
+	return ok;
 }
 
 bool main_rsa(void)

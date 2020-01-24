@@ -135,7 +135,44 @@ void API_EncryptBallot_free(struct register_ballot_message message,
     }
 }
 
-bool export_ballot(char *export_path, char *filename_prefix, char **output_filename, 
+bool API_EncryptBallot_soft_delete_file(char *export_path, char *filename)
+{
+    bool ok = true;
+    char *default_prefix = "electionguard_encrypted_ballots-";
+    char *existing_filename = malloc(FILENAME_MAX + 1);
+    if (existing_filename == NULL)
+    {
+        ok = false;
+        return ok;
+    }
+
+    char *soft_delete_filename = malloc(FILENAME_MAX + 1);
+    if (soft_delete_filename == NULL)
+    {
+        ok = false;
+        return ok;
+    }
+
+    ok = generate_filename(export_path, filename, default_prefix, existing_filename);
+
+    ok = generate_unique_filename(export_path, filename, default_prefix, soft_delete_filename);
+
+    uint32_t result = rename(existing_filename, soft_delete_filename);
+
+#ifdef DEBUG_PRINT 	
+   if(result != 0) 
+   {
+      printf("API_EncryptBallot_soft_delete_file: unable to rename the file\n\n");
+   }
+#endif
+
+    free(existing_filename);
+    free(soft_delete_filename);
+
+    return ok;
+}
+
+bool export_ballot(char *export_path, char *filename, char **output_filename, 
                     char *identifier,
                        struct register_ballot_message *encrypted_ballot_message)
 {
@@ -148,7 +185,7 @@ bool export_ballot(char *export_path, char *filename_prefix, char **output_filen
         return ok;
     }
     
-    ok = generate_filename(export_path, filename_prefix, default_prefix, *output_filename);
+    ok = generate_filename(export_path, filename, default_prefix, *output_filename);
 #ifdef DEBUG_PRINT 
     printf("API_EncryptBallots: generated filename for export at \"%s\"\n", *output_filename); 
 #endif

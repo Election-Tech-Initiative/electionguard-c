@@ -105,6 +105,8 @@ int main()
 
     if (ok)
     {
+        ok = API_EncryptBallot_soft_delete_file(encrypted_output_path, encrypted_output_prefix);
+        
         for (uint32_t i = 0; i < NUM_RANDOM_BALLOTS && ok; i++)
         {
             struct test_ballot testBallot;

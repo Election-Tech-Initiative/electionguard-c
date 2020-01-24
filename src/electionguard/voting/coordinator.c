@@ -100,7 +100,7 @@ struct Voting_Coordinator_new_r Voting_Coordinator_new(uint32_t num_selections)
 
 enum Voting_Coordinator_status Voting_Coordinator_clear_buffer(Voting_Coordinator coordinator)
 {
-    for(size_t i = 0; i < coordinator->buffered_num_ballots; i++)
+    for(uint32_t i = 0; i < coordinator->buffered_num_ballots; i++)
     {
         // clear the slections buffer
         if (coordinator->selections[i] != NULL)
@@ -149,8 +149,6 @@ void Voting_Coordinator_free(Voting_Coordinator coordinator)
 
     voting_coordinator_singleton.status = VOTING_COORDINATOR_SUCCESS;
     voting_coordinator_singleton.coordinator = NULL;
-
-    //Voting_Coordinator_ref_count = 0;
 
     free(coordinator);
 }
@@ -300,12 +298,10 @@ char *Voting_Coordinator_get_tracker(Voting_Coordinator coordinator,
     if (Ballot_Collection_get_ballot(external_identifier, &existing_ballot
     ) != BALLOT_COLLECTION_SUCCESS)
     {
-        free(existing_ballot);
         return NULL;
     }
 
     char *result = existing_ballot->tracker;
-    free(existing_ballot);
     return result;
 }
 
@@ -398,7 +394,6 @@ Voting_Coordinator_export_buffered_ballots(Voting_Coordinator coordinator, FILE 
         }
     }
 
-    // offset the number of ballots to a 0-based index
     uint32_t registered_ballot_index = number_of_ballots_written;
 
 #ifdef DEBUG_PRINT 
@@ -436,7 +431,7 @@ Voting_Coordinator_export_buffered_ballots(Voting_Coordinator coordinator, FILE 
     }
 
     // clear the selections buffer
-    // TODO: status = Voting_Coordinator_clear_buffer(coordinator);
+    status = Voting_Coordinator_clear_buffer(coordinator);
 
     return status;
 }

@@ -42,7 +42,7 @@ enum Voting_Coordinator_status
  * 
  * The Voting Coordinator can track the state of:
  * -- MAX_BALLOTS it can hold in memory and
- * -- MAX_BALLOT_PAYLOAD slections and trackers it can buffer before writing to cache
+ * -- MAX_BALLOT_PAYLOAD selections and trackers it can buffer before writing to cache
  * 
  * @param uint32_t num_selections the total number of selections 
  *                                available on the ballot
@@ -64,7 +64,7 @@ struct Voting_Coordinator_new_r
 void Voting_Coordinator_free(Voting_Coordinator coordinator);
 
 /**
- * Clear the slections buffer and drop instance references to any external id's
+ * Clear the selections buffer and drop instance references to any external id's
  */
 enum Voting_Coordinator_status Voting_Coordinator_clear_buffer(Voting_Coordinator coordinator);
 

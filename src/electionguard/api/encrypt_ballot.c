@@ -77,7 +77,6 @@ bool API_EncryptBallot(uint8_t *selections_byte_array,
                 .buf = (uint8_t *)result.id.bytes,
             };
             Serialize_read_ballot_identifier(&state, &id_rep);
-            // TODO: check? *identifier = id_rep.id;
             
             // Convert tracker to string represntation
             *tracker_string = display_ballot_tracker(result.tracker);         

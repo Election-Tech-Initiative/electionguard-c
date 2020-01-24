@@ -64,7 +64,6 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/trustee_state_rep.h
-    ${PROJECT_SOURCE_DIR}/src/electionguard/file.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/directory.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/directory.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/uthash.h
@@ -74,7 +73,6 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/load_ballots.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/record_ballots.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/tally_votes.h
-    ${PROJECT_SOURCE_DIR}/include/electionguard/file.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/max_values.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/trustee_state.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/voting/messages.h

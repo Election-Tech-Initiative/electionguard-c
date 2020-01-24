@@ -71,7 +71,12 @@ Decryption_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
 }
 
 void Decryption_Coordinator_free(Decryption_Coordinator c) 
-{ 
+{
+    for(uint32_t i = 0; i < c->num_tallies; i++)
+    {
+        Crypto_encryption_rep_free(&c->tallies[i]);
+    }
+
     free(c); 
 }
 

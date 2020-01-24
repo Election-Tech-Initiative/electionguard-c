@@ -6,13 +6,10 @@ BUILD_DEBUG?=false
 ELECTIONGUARD_DIR="$(realpath .)/build/ElectionGuard"
 
 # Detect operating system
-ifeq '$(findstring ;,$(PATH))' ';'
+ifeq ($(OS),Windows_NT)
     OPERATING_SYSTEM := Windows
 else
     OPERATING_SYSTEM := $(shell uname 2>/dev/null || echo Unknown)
-    OPERATING_SYSTEM := $(patsubst CYGWIN%,Cygwin,$(OPERATING_SYSTEM))
-    OPERATING_SYSTEM := $(patsubst MSYS%,MSYS,$(OPERATING_SYSTEM))
-    OPERATING_SYSTEM := $(patsubst MINGW%,MSYS,$(OPERATING_SYSTEM))
 endif
 
 add-dependencies:
@@ -34,7 +31,8 @@ endif
 
 build-debug: clean
 ifeq ($(OPERATING_SYSTEM),Windows)
-    cmake -S . -B build -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Debug
+	cmake -S . -B build -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Debug
+	cmake --build build
 else
 	if [ ! -d "build" ]; then mkdir build; fi
 	cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -43,7 +41,8 @@ endif
 
 build-release: clean
 ifeq ($(OPERATING_SYSTEM),Windows)
-    cmake -S . -B build -G "MSYS Makefiles" -DBUILD_SHARED_LIBS=ON
+	cmake -S . -B build -G "MSYS Makefiles" -DBUILD_SHARED_LIBS=ON
+	cmake --build build
 else
 	if [ ! -d "build" ]; then mkdir build; fi
 	cmake -S . -B build -DBUILD_SHARED_LIBS=ON
@@ -59,7 +58,9 @@ endif
 
 run-api: build
 ifeq ($(OPERATING_SYSTEM),Windows)
-    
+	CMAKE_PREFIX_PATH="./build/ElectionGuard" cmake -S examples/api -B api_build -G "MSYS Makefiles"
+	cmake --build api_build --target api
+	PATH=$(PWD)/build:$$PATH; ./api_build/api
 else
 	if [ ! -d "api_build" ]; then mkdir api_build; fi
 	ElectionGuard_DIR=$(ELECTIONGUARD_DIR) cmake -S examples/api -B api_build

@@ -353,8 +353,8 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
         if (digest_buffer == NULL)
         {
             // handle insufficient memory error
-            balotR.status = VOTING_ENCRYPTER_INSUFFICIENT_MEMORY;
-            return balotR;
+            ballot_result.status = VOTING_ENCRYPTER_INSUFFICIENT_MEMORY;
+            return ballot_result;
         }
 
         SHA256Init(&context);

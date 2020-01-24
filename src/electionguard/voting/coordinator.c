@@ -384,6 +384,9 @@ Voting_Coordinator_export_buffered_ballots(Voting_Coordinator coordinator, FILE 
         return status;
     }
 
+    // flush the write buffer before reading the file
+    fflush(out);
+
     // seek to the end of the file
     int character, number_of_ballots_written = 0; 
     while ((character = fgetc(out)) != EOF) 

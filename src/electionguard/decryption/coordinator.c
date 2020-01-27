@@ -160,7 +160,7 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator c,
         }
     }
 
-    //free 
+    // free 
     for (uint32_t i = 0; i < share_rep.num_tallies; i++)
     {
         Crypto_encryption_rep_free(&share_rep.tally_share[i]);

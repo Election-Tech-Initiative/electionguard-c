@@ -12,7 +12,7 @@ static bool get_serialized_ballot_identifier(int64_t ballot_id, struct ballot_id
 static bool export_ballots(char *export_path, char *filename_prefix, char **output_filename);
 
 // Global state
-static Voting_Coordinator record_coordinator = NULL;
+static Voting_Coordinator _record_coordinator = NULL;
 
 bool API_RecordBallots(uint32_t num_selections,
                        uint32_t num_cast_ballots,
@@ -34,7 +34,7 @@ bool API_RecordBallots(uint32_t num_selections,
     Crypto_parameters_new();
     
     // Initialize Voting Coordinator
-    if (ok && record_coordinator == NULL)
+    if (ok && _record_coordinator == NULL)
     {
         ok = initialize_coordinator(num_selections);
     }
@@ -48,7 +48,7 @@ bool API_RecordBallots(uint32_t num_selections,
         char *registered_tracker;
         enum Voting_Coordinator_status status =
             Voting_Coordinator_register_ballot(
-                record_coordinator, 
+                _record_coordinator, 
                 external_identifiers[i], 
                 encrypted_ballots[i], 
                 &registered_tracker
@@ -135,7 +135,7 @@ bool API_RecordBallots(uint32_t num_selections,
         ok = export_ballots(export_path, filename_prefix, output_filename);
     }
 
-    Voting_Coordinator_clear_buffer(record_coordinator);
+    Voting_Coordinator_clear_buffer(_record_coordinator);
 
     // Clean up
     
@@ -175,10 +175,10 @@ void API_RecordBallots_free(char *output_filename,
             free(spoiled_tracker_strings[i]);
     }
 
-    if (record_coordinator != NULL)
+    if (_record_coordinator != NULL)
     {
-        Voting_Coordinator_free(record_coordinator);
-        record_coordinator = NULL;
+        Voting_Coordinator_free(_record_coordinator);
+        _record_coordinator = NULL;
     }
 }
 
@@ -192,7 +192,7 @@ bool initialize_coordinator(uint32_t num_selections)
     if (result.status != VOTING_COORDINATOR_SUCCESS)
         ok = false;
     else
-        record_coordinator = result.coordinator;
+        _record_coordinator = result.coordinator;
 
     return ok;
 }
@@ -258,7 +258,7 @@ bool export_ballots(char *export_path, char *filename_prefix, char **output_file
         }
         
         enum Voting_Coordinator_status status =
-            Voting_Coordinator_export_buffered_ballots(record_coordinator, out);
+            Voting_Coordinator_export_buffered_ballots(_record_coordinator, out);
         
         if (status != VOTING_COORDINATOR_SUCCESS)
         {

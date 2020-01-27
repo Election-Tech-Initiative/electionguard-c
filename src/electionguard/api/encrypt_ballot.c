@@ -13,7 +13,7 @@ static bool export_ballot(char *export_path, char *filename_prefix, char **outpu
 
 // Global state
 static struct api_config api_config;
-static Voting_Encrypter encrypter;
+static Voting_Encrypter _encrypter;
 
 bool API_EncryptBallot(uint8_t *selections_byte_array,
                        uint32_t expected_num_selected,
@@ -44,7 +44,9 @@ bool API_EncryptBallot(uint8_t *selections_byte_array,
     // Initialize Encrypter
 
     if (ok)
+    {
         ok = initialize_encrypter(api_config.joint_key);
+    }    
 
     // Encrypt ballot
     
@@ -56,7 +58,7 @@ bool API_EncryptBallot(uint8_t *selections_byte_array,
     if (ok)
     {
         result = Voting_Encrypter_encrypt_ballot(
-            encrypter, 
+            _encrypter, 
             external_identifier, 
             selections, 
             expected_num_selected
@@ -108,10 +110,10 @@ bool API_EncryptBallot(uint8_t *selections_byte_array,
         result.tracker.bytes = NULL;
     }
 
-    if (encrypter != NULL)
+    if (_encrypter != NULL)
     {
-        Voting_Encrypter_free(encrypter);
-        encrypter = NULL;
+        Voting_Encrypter_free(_encrypter);
+        _encrypter = NULL;
     }
 
     Crypto_parameters_free();
@@ -254,7 +256,7 @@ bool initialize_encrypter(struct joint_public_key joint_key)
     if (result.status != VOTING_ENCRYPTER_SUCCESS)
         ok = false;
     else
-        encrypter = result.encrypter;
+        _encrypter = result.encrypter;
 
     return ok;
 }

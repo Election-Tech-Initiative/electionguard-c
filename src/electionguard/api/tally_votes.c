@@ -23,7 +23,7 @@ static bool export_tally_votes(char *export_path, char *filename_prefix,
 
 // Global state
 static struct api_config api_config;
-static Decryption_Coordinator coordinator;
+static Decryption_Coordinator _decryption_coordinator;
 static Decryption_Trustee decryption_trustees[MAX_TRUSTEES];
 
 bool API_TallyVotes(struct api_config config,
@@ -88,10 +88,10 @@ bool API_TallyVotes(struct api_config config,
             decryption_trustees[i] = NULL;
         }
 
-    if (coordinator != NULL)
+    if (_decryption_coordinator != NULL)
     {
-        Decryption_Coordinator_free(coordinator);
-        coordinator = NULL;
+        Decryption_Coordinator_free(_decryption_coordinator);
+        _decryption_coordinator = NULL;
     }
 
     Crypto_parameters_free();
@@ -117,7 +117,7 @@ bool initialize_coordinator(void)
     if (result.status != DECRYPTION_COORDINATOR_SUCCESS)
         ok = false;
     else
-        coordinator = result.coordinator;
+        _decryption_coordinator = result.coordinator;
 
     return ok;
 }
@@ -200,7 +200,7 @@ bool decrypt_tally_shares()
         if (ok)
         {
             enum Decryption_Coordinator_status status =
-                Decryption_Coordinator_receive_share(coordinator, share);
+                Decryption_Coordinator_receive_share(_decryption_coordinator, share);
             if (status != DECRYPTION_COORDINATOR_SUCCESS)
                 ok = false;
         }
@@ -227,7 +227,7 @@ bool request_missing_trustee_tally_shares(
         if (ok)
         {
             struct Decryption_Coordinator_all_shares_received_r result =
-                Decryption_Coordinator_all_shares_received(coordinator);
+                Decryption_Coordinator_all_shares_received(_decryption_coordinator);
 
             if (result.status != DECRYPTION_COORDINATOR_SUCCESS)
                 ok = false;
@@ -273,7 +273,7 @@ bool decrypt_tally_decryption_fragments(
             {
                 enum Decryption_Coordinator_status status =
                     Decryption_Coordinator_receive_fragments(
-                        coordinator, decryption_fragments);
+                        _decryption_coordinator, decryption_fragments);
 
                 if (status != DECRYPTION_COORDINATOR_SUCCESS)
                     ok = false;
@@ -322,7 +322,7 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
         }
 
         enum Decryption_Coordinator_status status =
-            Decryption_Coordinator_all_fragments_received(coordinator, out, tally_results_array);
+            Decryption_Coordinator_all_fragments_received(_decryption_coordinator, out, tally_results_array);
 
         if (status != DECRYPTION_COORDINATOR_SUCCESS)
         {

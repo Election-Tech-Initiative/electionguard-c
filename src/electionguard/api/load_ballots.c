@@ -15,7 +15,7 @@ static API_LoadBallots_status load_ballots(uint64_t start_index,
                     struct register_ballot_message *out_encrypted_ballots);
 
 // Global state
-static Voting_Coordinator load_coordinator = NULL;
+static Voting_Coordinator _load_coordinator = NULL;
 
 /**
  * Load a range of ballots from a specified file on the file system
@@ -33,7 +33,7 @@ API_LoadBallots_status API_LoadBallots(
     // Set global variables
     Crypto_parameters_new();
     
-    if (load_coordinator == NULL)
+    if (_load_coordinator == NULL)
     {
         status = initialize_coordinator(num_selections);
     }
@@ -72,10 +72,10 @@ API_LoadBallots_status API_LoadBallots_free(char *output_filename)
         free(output_filename);
     }
 
-    if (load_coordinator != NULL)
+    if (_load_coordinator != NULL)
     {
-        Voting_Coordinator_free(load_coordinator);
-        load_coordinator = NULL;
+        Voting_Coordinator_free(_load_coordinator);
+        _load_coordinator = NULL;
     }
 
     return status;
@@ -90,7 +90,7 @@ API_LoadBallots_status initialize_coordinator(uint32_t num_selections)
         return API_LOADBALLOTS_INITIALIZATION_ERROR;
     else
     {
-        load_coordinator = result.coordinator;
+        _load_coordinator = result.coordinator;
         return API_LOADBALLOTS_SUCCESS;
     }
 }
@@ -112,7 +112,7 @@ API_LoadBallots_status load_ballots(uint64_t start_index,
     enum Voting_Coordinator_status load_result = VOTING_COORDINATOR_SUCCESS;
 
     load_result = Voting_Coordinator_import_encrypted_ballots(
-        load_coordinator,
+        _load_coordinator,
         start_index,
         count,
         num_selections,

@@ -27,7 +27,7 @@ static bool export_trustee_states(struct trustee_state *trustee_states);
 
 // Global state
 static struct api_config api_config;
-static KeyCeremony_Coordinator coordinator;
+static KeyCeremony_Coordinator _keyceremony_coordinator;
 static KeyCeremony_Trustee trustees[MAX_TRUSTEES];
 
 bool API_CreateElection(struct api_config *config,
@@ -123,8 +123,8 @@ bool API_CreateElection(struct api_config *config,
 
     // Key Ceremony Coordinator is only used in 
     // this part of the workflow so free it
-    if (coordinator != NULL)
-        KeyCeremony_Coordinator_free(coordinator);
+    if (_keyceremony_coordinator != NULL)
+        KeyCeremony_Coordinator_free(_keyceremony_coordinator);
 
     Crypto_parameters_free();
 
@@ -160,7 +160,7 @@ bool initialize_coordinator(void)
     if (result.status != KEYCEREMONY_COORDINATOR_SUCCESS)
         ok = false;
     else
-        coordinator = result.coordinator;
+        _keyceremony_coordinator = result.coordinator;
 
     return ok;
 }
@@ -202,8 +202,10 @@ bool generate_keys(void)
         if (ok)
         {
             enum KeyCeremony_Coordinator_status status =
-                KeyCeremony_Coordinator_receive_key_generated(coordinator,
-                                                              key_generated);
+                KeyCeremony_Coordinator_receive_key_generated(
+                    _keyceremony_coordinator,
+                    key_generated
+                );
             if (status != KEYCEREMONY_COORDINATOR_SUCCESS)
                 ok = false;            
         }
@@ -223,7 +225,7 @@ struct all_keys_received_message receive_keys(void)
     struct all_keys_received_message message = {.bytes = NULL};
 
     struct KeyCeremony_Coordinator_all_keys_received_r result =
-        KeyCeremony_Coordinator_all_keys_received(coordinator);
+        KeyCeremony_Coordinator_all_keys_received(_keyceremony_coordinator);
 
     if (result.status == KEYCEREMONY_COORDINATOR_SUCCESS)
         message = result.message;
@@ -256,7 +258,7 @@ bool generate_shares(struct all_keys_received_message all_keys_received)
         {
             enum KeyCeremony_Coordinator_status cstatus =
                 KeyCeremony_Coordinator_receive_shares_generated(
-                    coordinator, shares_generated);
+                    _keyceremony_coordinator, shares_generated);
             if (cstatus != KEYCEREMONY_COORDINATOR_SUCCESS)
                 ok = false;
         }
@@ -276,7 +278,7 @@ struct all_shares_received_message receive_shares()
     struct all_shares_received_message message = {.bytes = NULL};
 
     struct KeyCeremony_Coordinator_all_shares_received_r result =
-        KeyCeremony_Coordinator_all_shares_received(coordinator);
+        KeyCeremony_Coordinator_all_shares_received(_keyceremony_coordinator);
 
     if (result.status == KEYCEREMONY_COORDINATOR_SUCCESS)
         message = result.message;
@@ -306,7 +308,7 @@ bool verify_shares(struct all_shares_received_message all_shares_received)
         {
             enum KeyCeremony_Coordinator_status status =
                 KeyCeremony_Coordinator_receive_shares_verified(
-                    coordinator, shares_verified);
+                    _keyceremony_coordinator, shares_verified);
             if (status != KEYCEREMONY_COORDINATOR_SUCCESS)
                 ok = false;
         }
@@ -326,7 +328,7 @@ struct joint_public_key publish_joint_key(void)
     struct joint_public_key key = {.bytes = NULL};
 
     struct KeyCeremony_Coordinator_publish_joint_key_r cresult =
-        KeyCeremony_Coordinator_publish_joint_key(coordinator);
+        KeyCeremony_Coordinator_publish_joint_key(_keyceremony_coordinator);
 
     if (cresult.status == KEYCEREMONY_COORDINATOR_SUCCESS)
         key = cresult.key;

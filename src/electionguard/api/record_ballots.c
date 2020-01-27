@@ -78,6 +78,7 @@ bool API_RecordBallots(uint32_t num_selections,
         if (status != VOTING_COORDINATOR_SUCCESS)
         {
             DEBUG_PRINT(("API_RecordBallots: cast_ballot : failed!\n"));
+            casted_tracker_strings[i] = NULL;
             ok = false;
         }
         else 
@@ -99,6 +100,8 @@ bool API_RecordBallots(uint32_t num_selections,
 
         if (status != VOTING_COORDINATOR_SUCCESS)
         {
+            DEBUG_PRINT(("API_RecordBallots: spoil_ballot : failed!\n"));
+            spoiled_tracker_strings[i] = NULL;
             ok = false;
         }
         else 
@@ -116,9 +119,9 @@ bool API_RecordBallots(uint32_t num_selections,
         ok = export_ballots(export_path, filename_prefix, output_filename);
     }
 
-    Voting_Coordinator_clear_buffer(_record_coordinator);
-
     // Clean up
+
+    Voting_Coordinator_clear_buffer(_record_coordinator);
     
     // Unlike other API Methods, we do not call
     // Voting_Coordinator_free, because that component

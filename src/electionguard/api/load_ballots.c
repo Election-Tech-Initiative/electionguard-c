@@ -2,6 +2,8 @@
 
 #include <electionguard/api/load_ballots.h>
 
+#include <log.h>
+
 #include "api/base_hash.h"
 #include "directory.h"
 #include "api/filename.h"
@@ -104,8 +106,17 @@ API_LoadBallots_status load_ballots(uint64_t start_index,
 {
     // open the file for read
     FILE *in = fopen(import_filepath, "r");
-    if (in == NULL || fseek(in, 0L, SEEK_SET) != 0) 
+    if (in == NULL) 
     {
+        INFO_PRINT(("API_LoadBallots: load_ballots error accessing file\n"));
+        return API_LOADBALLOTS_IO_ERROR;
+    }
+
+    int seek_status = fseek(in, 0, SEEK_SET);
+    if (seek_status != 0)
+    {
+        INFO_PRINT(("API_LoadBallots: load_ballots error seeking file\n"));
+        fclose(in);
         return API_LOADBALLOTS_IO_ERROR;
     }
 

@@ -3,6 +3,8 @@
 
 #include <electionguard/api/tally_votes.h>
 
+#include <log.h>
+
 #include "api/base_hash.h"
 #include "api/filename.h"
 #include "directory.h"
@@ -295,17 +297,18 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
 {
     bool ok = true;
     char *default_prefix = "electionguard_tally-";
-    *output_filename = malloc(FILENAME_MAX * + 1);
+    *output_filename = malloc(FILENAME_MAX + 1);
     if (output_filename == NULL)
     {
         ok = false;
         return ok;
     }
     
-    ok = generate_unique_filename(export_path, filename_prefix, default_prefix, *output_filename);   
-#ifdef DEBUG_PRINT 
-    printf("API_TALLYVOTES :: generated unique filename for export at \"%s\"\n", *output_filename);
-#endif
+    if (ok)
+    {
+        ok = generate_unique_filename(export_path, filename_prefix, default_prefix, *output_filename);   
+        DEBUG_PRINT(("API_TALLYVOTES :: generated unique filename for export at \"%s\"\n", *output_filename));
+    }
 
     if (ok && !Directory_exists(export_path)) 
     {
@@ -317,7 +320,7 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
         FILE *out = fopen(*output_filename, "w+");
         if (out == NULL)
         {
-            printf("API_TallyVotes: error accessing file\n");
+            INFO_PRINT(("API_TallyVotes: error accessing file\n"));
             return false;
         }
 
@@ -338,11 +341,9 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
 
     if (!ok)
     {
-
-#ifdef DEBUG_PRINT 
-        printf("API_TallyVotes: error exporting to: %s\n", *output_filename);
-#endif
-
+        free(output_filename);
+        output_filename == NULL;
+        DEBUG_PRINT(("API_TallyVotes: error exporting to: %s\n", *output_filename));
     }
 
     return ok;

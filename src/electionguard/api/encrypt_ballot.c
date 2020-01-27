@@ -2,6 +2,8 @@
 
 #include <electionguard/api/encrypt_ballot.h>
 
+#include <log.h>
+
 #include "api/base_hash.h"
 #include "directory.h"
 #include "api/filename.h"
@@ -145,28 +147,38 @@ bool API_EncryptBallot_soft_delete_file(char *export_path, char *filename)
     if (existing_filename == NULL)
     {
         ok = false;
-        return ok;
     }
 
     char *soft_delete_filename = malloc(FILENAME_MAX + 1);
     if (soft_delete_filename == NULL)
     {
         ok = false;
-        return ok;
     }
 
-    ok = generate_filename(export_path, filename, default_prefix, existing_filename);
+    if (ok)
+    {
+        ok = generate_filename(export_path, filename, default_prefix, existing_filename);
+    }
 
-    ok = generate_unique_filename(export_path, filename, default_prefix, soft_delete_filename);
+    if (ok)
+    {
+        ok = generate_unique_filename(export_path, filename, default_prefix, soft_delete_filename);
+    }
 
-    uint32_t result = rename(existing_filename, soft_delete_filename);
+    if (ok)
+    {
+        uint32_t result = rename(existing_filename, soft_delete_filename);
+        if (result != 0)
+        {
+            ok = false;
+            DEBUG_PRINT(("API_EncryptBallot_soft_delete_file: unable to rename the file\n\n"));
+        }
+    }
 
-#ifdef DEBUG_PRINT 	
-   if(result != 0) 
-   {
-      printf("API_EncryptBallot_soft_delete_file: unable to rename the file\n\n");
-   }
-#endif
+    if (!ok)
+    {
+        DEBUG_PRINT(("API_EncryptBallot_soft_delete_file: unable to sofdt delete the file\n\n"));
+    }
 
     free(existing_filename);
     free(soft_delete_filename);
@@ -176,7 +188,7 @@ bool API_EncryptBallot_soft_delete_file(char *export_path, char *filename)
 
 bool export_ballot(char *export_path, char *filename, char **output_filename, 
                     char *identifier,
-                       struct register_ballot_message *encrypted_ballot_message)
+                    struct register_ballot_message *encrypted_ballot_message)
 {
     bool ok = true;
     char *default_prefix = "electionguard_encrypted_ballots-";
@@ -186,11 +198,12 @@ bool export_ballot(char *export_path, char *filename, char **output_filename,
         ok = false;
         return ok;
     }
-    
-    ok = generate_filename(export_path, filename, default_prefix, *output_filename);
-#ifdef DEBUG_PRINT 
-    printf("API_EncryptBallots: generated filename for export at \"%s\"\n", *output_filename); 
-#endif
+
+    if (ok)
+    {
+        ok = generate_filename(export_path, filename, default_prefix, *output_filename);
+        DEBUG_PRINT(("API_EncryptBallots: generated filename for export at \"%s\"\n", *output_filename)); 
+    }
 
     if (ok && !Directory_exists(export_path))
     {
@@ -202,14 +215,15 @@ bool export_ballot(char *export_path, char *filename, char **output_filename,
         FILE *out = fopen(*output_filename, "a+");
         if (out == NULL)
         {
-            printf("API_EncryptBallots: error accessing file\n");
+            INFO_PRINT(("API_EncryptBallots: export_ballot error accessing file\n"));
             return false;
         }
 
         int seek_status = fseek(out, 0, SEEK_END);
         if (seek_status != 0)
         {
-            printf("API_EncryptBallots: error seeking file\n");
+            INFO_PRINT(("API_EncryptBallots: export_ballot error seeking file\n"));
+            fclose(out);
             return false;
         }
         
@@ -230,11 +244,9 @@ bool export_ballot(char *export_path, char *filename, char **output_filename,
 
     if (!ok)
     {
-
-#ifdef DEBUG_PRINT 
-        printf("API_EncryptBallots: error exporting to: %s\n", *output_filename);
-#endif
-
+        free(output_filename);
+        output_filename == NULL;
+        DEBUG_PRINT(("API_EncryptBallots: error exporting to: %s\n", *output_filename));
     }
 
     return ok;

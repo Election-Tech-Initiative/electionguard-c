@@ -2,6 +2,8 @@
 
 #include <electionguard/api/record_ballots.h>
 
+#include <log.h>
+
 #include "api/base_hash.h"
 #include "directory.h"
 #include "api/filename.h"
@@ -42,9 +44,8 @@ bool API_RecordBallots(uint32_t num_selections,
     // Register Ballots
     for (uint32_t i = 0; i < total_num_ballots && ok; i++)
     {
-#ifdef DEBUG_PRINT
-        printf("\nAPI_RecordBallots: register_ballot: id: %s .len = %lu\n", external_identifiers[i], encrypted_ballots[i].len);
-#endif
+        DEBUG_PRINT(("\nAPI_RecordBallots: register_ballot: id: %s .len = %lu\n", external_identifiers[i], encrypted_ballots[i].len));
+        
         char *registered_tracker;
         enum Voting_Coordinator_status status =
             Voting_Coordinator_register_ballot(
@@ -56,46 +57,32 @@ bool API_RecordBallots(uint32_t num_selections,
 
         if (status != VOTING_COORDINATOR_SUCCESS)
         {
-
-#ifdef DEBUG_PRINT
-            printf("API_RecordBallots: register_ballot: failed!\n");
-#endif
+            DEBUG_PRINT(("API_RecordBallots: register_ballot: failed!\n"));
             ok = false;
         }
         else 
         {
-
-#ifdef DEBUG_PRINT
-            printf("API_RecordBallots: register_ballot: success! tracker: %.20s...\n", registered_tracker);
-#endif 
+            DEBUG_PRINT(("API_RecordBallots: register_ballot: success! tracker: %.20s...\n", registered_tracker));
         }
     }
 
     // Record Cast Ballots
     for (uint32_t i = 0; i < num_cast_ballots && ok; i++)
     {   
+        DEBUG_PRINT(("\nAPI_RecordBallots: cast_ballot : id: %s\n", cast_ids[i]));
 
-#ifdef DEBUG_PRINT
-        printf("\nAPI_RecordBallots: cast_ballot : id: %s\n", cast_ids[i]);
-#endif
         char *cast_tracker;
         enum Voting_Coordinator_status status =
-                Voting_Coordinator_cast_ballot(record_coordinator, cast_ids[i], &cast_tracker);
+                Voting_Coordinator_cast_ballot(_record_coordinator, cast_ids[i], &cast_tracker);
 
         if (status != VOTING_COORDINATOR_SUCCESS)
         {
-
-#ifdef DEBUG_PRINT
-            printf("API_RecordBallots: cast_ballot : failed!\n");
-#endif 
+            DEBUG_PRINT(("API_RecordBallots: cast_ballot : failed!\n"));
             ok = false;
         }
         else 
         {
-
-#ifdef DEBUG_PRINT
-            printf("API_RecordBallots: cast_ballot : sucess! tracker: %.20s...\n", cast_tracker);
-#endif 
+            DEBUG_PRINT(("API_RecordBallots: cast_ballot : sucess! tracker: %.20s...\n", cast_tracker));
         }
 
         casted_tracker_strings[i] = cast_tracker;
@@ -104,14 +91,11 @@ bool API_RecordBallots(uint32_t num_selections,
     // Record Spoiled Ballots
     for (uint32_t i = 0; i < num_spoil_ballots && ok; i++)
     {   
-
-#ifdef DEBUG_PRINT 
-        printf("\nAPI_RecordBallots: spoil_ballot: id: %s\n", spoil_ids[i]);
-#endif
+        DEBUG_PRINT(("\nAPI_RecordBallots: spoil_ballot: id: %s\n", spoil_ids[i]));
 
         char *spoiled_tracker;
         enum Voting_Coordinator_status status =
-            Voting_Coordinator_spoil_ballot(record_coordinator, spoil_ids[i], &spoiled_tracker);
+            Voting_Coordinator_spoil_ballot(_record_coordinator, spoil_ids[i], &spoiled_tracker);
 
         if (status != VOTING_COORDINATOR_SUCCESS)
         {
@@ -119,10 +103,7 @@ bool API_RecordBallots(uint32_t num_selections,
         }
         else 
         {
-
-#ifdef DEBUG_PRINT
-            printf("API_RecordBallots: spoil_ballot: success! tracker: %.20s...\n", spoiled_tracker);
-#endif 
+            DEBUG_PRINT(("API_RecordBallots: spoil_ballot: success! tracker: %.20s...\n", spoiled_tracker));
         }
 
         spoiled_tracker_strings[i] = spoiled_tracker;
@@ -238,10 +219,11 @@ bool export_ballots(char *export_path, char *filename_prefix, char **output_file
         return ok;
     }
 
-    ok = generate_filename(export_path, filename_prefix, default_prefix, *output_filename);   
-#ifdef DEBUG_PRINT 
-    printf("\nAPI_RecordBallots: generated unique filename for export at \"%s\"\n", *output_filename);
-#endif
+    if (ok)
+    {
+        ok = generate_filename(export_path, filename_prefix, default_prefix, *output_filename);   
+        DEBUG_PRINT(("\nAPI_RecordBallots: generated unique filename for export at \"%s\"\n", *output_filename));
+    }
 
     if (ok && !Directory_exists(export_path)) 
     {
@@ -253,7 +235,7 @@ bool export_ballots(char *export_path, char *filename_prefix, char **output_file
         FILE *out = fopen(*output_filename, "w+");
         if (out == NULL)
         {
-            printf("API_RecordBallots: error accessing file\n");
+            INFO_PRINT(("API_RecordBallots: error accessing file\n"));
             return false;
         }
         
@@ -274,11 +256,9 @@ bool export_ballots(char *export_path, char *filename_prefix, char **output_file
 
     if (!ok)
     {
-
-#ifdef DEBUG_PRINT 
-        printf("API_RecordBallots: error exporting to: %s\n", *output_filename);
-#endif
-
+        free(output_filename);
+        output_filename == NULL;
+        DEBUG_PRINT(("API_RecordBallots: error exporting to: %s\n", *output_filename));
     }
 
     return ok;

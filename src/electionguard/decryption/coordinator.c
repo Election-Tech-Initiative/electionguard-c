@@ -105,39 +105,56 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator c,
         Serialize_read_decryption_share(&state, &share_rep);
 
         if (state.status != SERIALIZE_STATE_READING)
+        {
             status = DECRYPTION_COORDINATOR_DESERIALIZE_ERROR;
+        }
     }
 
     // Check that we haven't already seen this trustee
     if (status == DECRYPTION_COORDINATOR_SUCCESS)
     {
-        if (share_rep.trustee_index >= c->num_trustees)
+        if (share_rep.trustee_index >= coordinator->num_trustees)
+        {
             status = DECRYPTION_COORDINATOR_INVALID_TRUSTEE_INDEX;
-        else if (c->anounced[share_rep.trustee_index])
+        }
+        else if (coordinator->anounced[share_rep.trustee_index])
+        {
             status = DECRYPTION_COORDINATOR_DUPLICATE_TRUSTEE_INDEX;
+        }
     }
 
     if (status == DECRYPTION_COORDINATOR_SUCCESS)
     {
-        c->anounced[share_rep.trustee_index] = true;
+        coordinator->anounced[share_rep.trustee_index] = true;
+
         // We check to see if this is the first time through
-        if (c->tallies_initialized)
+        if (coordinator->tallies_initialized)
         {
             // If it is, we add in the shares for the new tally
-            if (share_rep.num_tallies != c->num_tallies)
+            if (share_rep.num_tallies != coordinator->num_tallies)
             {
                 status = DECRYPTION_COORDINATOR_CONFUSED_DECRYPTION_TRUSTEE;
             }
-            for (size_t i = 0; i < share_rep.num_tallies &&
-                               DECRYPTION_COORDINATOR_SUCCESS == status;
-                 i++)
+
+            for (size_t i = 0; i < share_rep.num_tallies 
+                && DECRYPTION_COORDINATOR_SUCCESS == status;
+                i++)
             {
-                mul_mod_p(c->tallies[i].nonce_encoding,
-                          c->tallies[i].nonce_encoding,
-                          share_rep.tally_share[i].nonce_encoding);
-                if (!(0 == mpz_cmp(c->tallies[i].message_encoding,
-                                   share_rep.tally_share[i].message_encoding)))
+                mul_mod_p(
+                    coordinator->tallies[i].nonce_encoding,
+                    coordinator->tallies[i].nonce_encoding,
+                    share_rep.tally_share[i].nonce_encoding
+                );
+
+                int compare_result = mpz_cmp(
+                    coordinator->tallies[i].message_encoding,
+                    share_rep.tally_share[i].message_encoding
+                );
+
+                if (compare_result != 0)
+                {
                     status = DECRYPTION_COORDINATOR_CONFUSED_DECRYPTION_TRUSTEE;
+                }
 
                 // printf("Comparing message encodings\n");
                 // print_base16(c->tallies[i].message_encoding);
@@ -147,16 +164,20 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator c,
         else
         {
             //If this is the first one, we just copy them over
-            c->num_tallies = share_rep.num_tallies;
+            coordinator->num_tallies = share_rep.num_tallies;
             for (size_t i = 0; i < share_rep.num_tallies; i++)
             {
-                Crypto_encryption_rep_new(&c->tallies[i]);
-                mpz_set(c->tallies[i].nonce_encoding,
-                        share_rep.tally_share[i].nonce_encoding);
-                mpz_set(c->tallies[i].message_encoding,
-                        share_rep.tally_share[i].message_encoding);
+                Crypto_encryption_rep_new(&coordinator->tallies[i]);
+                mpz_set(
+                    coordinator->tallies[i].nonce_encoding,
+                    share_rep.tally_share[i].nonce_encoding
+                );
+                mpz_set(
+                    coordinator->tallies[i].message_encoding,
+                    share_rep.tally_share[i].message_encoding
+                );
             }
-            c->tallies_initialized = true;
+            coordinator->tallies_initialized = true;
         }
     }
 

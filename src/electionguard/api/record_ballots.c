@@ -260,7 +260,7 @@ bool export_ballots(char *export_path, char *filename_prefix, char **output_file
     if (!ok)
     {
         free(output_filename);
-        output_filename == NULL;
+        output_filename = NULL;
         DEBUG_PRINT(("API_RecordBallots: error exporting to: %s\n", *output_filename));
     }
 

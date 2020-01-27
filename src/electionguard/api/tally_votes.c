@@ -342,7 +342,7 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
     if (!ok)
     {
         free(output_filename);
-        output_filename == NULL;
+        output_filename = NULL;
         DEBUG_PRINT(("API_TallyVotes: error exporting to: %s\n", *output_filename));
     }
 

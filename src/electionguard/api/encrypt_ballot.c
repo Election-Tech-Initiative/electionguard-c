@@ -246,7 +246,7 @@ bool export_ballot(char *export_path, char *filename, char **output_filename,
     if (!ok)
     {
         free(output_filename);
-        output_filename == NULL;
+        output_filename = NULL;
         DEBUG_PRINT(("API_EncryptBallots: error exporting to: %s\n", *output_filename));
     }
 

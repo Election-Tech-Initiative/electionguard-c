@@ -15,7 +15,8 @@
  *                                  with each encrypted ballot
  * @param char *export_path
  * @param char *filename
- * @param char **output_filename
+ * @param char **output_filename return value of the generated file.  
+ *                               when successful, caller is responsible for Freeing output_filename
  * @param char **tracker_string representation of the ballot's tracking Id after encryption
  */
 bool API_EncryptBallot(uint8_t *selections_byte_array,

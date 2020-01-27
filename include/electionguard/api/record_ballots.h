@@ -19,7 +19,8 @@
  * @param struct register_ballot_message *encrypted_ballots array pointing to serialized encrypted ballots
  * @param char *export_path path to export the ballots file for use when decrypting
  * @param char *filename_prefix previx to use on the file name
- * @param char **output_filename return value of the generated file
+ * @param char **output_filename return value of the generated file.  
+ *                               when successful, caller is responsible for Freeing output_filename
  * @param char **casted_tracker_strings return value of the trackers that were cast
  * @param char **spoiled_tracker_strings return value of the trackers that were spoiled
  */

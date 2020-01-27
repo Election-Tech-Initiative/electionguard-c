@@ -71,11 +71,11 @@ bool create_directory(const char *path)
 
 bool Directory_exists(const char *path)
 {
+    bool exists = false;
     struct stat stats = {0};
-
     if (stat(path, &stats) == 0 && S_ISDIR(stats.st_mode)) 
     {
-        return true;
+        exists = true;
     }
-    return false;
+    return exists;
 }

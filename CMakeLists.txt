@@ -12,8 +12,8 @@ set(CMAKE_C_EXTENSIONS OFF)
 message("Generated with config types: ${CMAKE_CONFIGURATION_TYPES}")
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
-    message("setting DEBUG_PRINT")
-    add_compile_definitions(DEBUG_PRINT)
+    message("setting DEBUG during compile")
+    add_compile_definitions(DEBUG)
 ENDIF()
 
 
@@ -56,6 +56,7 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/keyceremony/trustee.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/uint4096.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/bignum.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/log.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/sha2-openbsd.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/sha2-openbsd.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto.c

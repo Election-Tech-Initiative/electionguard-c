@@ -14,7 +14,7 @@
 #include "voting/message_reps.h"
 
 // count of ballots encrypted with this encrypter
-uint64_t encrypted_ballot_count = 0;
+uint64_t _encrypted_ballot_count = 0;
 
 struct Voting_Encrypter_s
 {
@@ -183,7 +183,7 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
 {
     // TODO: associate the external_identifier with the internal one, possibly via hash
     
-    uint64_t internal_ballot_id = encrypted_ballot_count;
+    uint64_t internal_ballot_id = _encrypted_ballot_count;
     struct Voting_Encrypter_encrypt_ballot_r ballot_result;
     ballot_result.status = VOTING_ENCRYPTER_SUCCESS;
 
@@ -231,7 +231,7 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
     struct encrypted_ballot_rep encrypted_ballot;
     if (ballot_result.status == VOTING_ENCRYPTER_SUCCESS)
     {
-        // TODO: verify that encrypted_ballot_count can be duplicated in a single file
+        // TODO: verify that _encrypted_ballot_count can be duplicated in a single file
         // but not in a single instance
         struct Crypto_encrypted_ballot_new_r temp_result =
             Crypto_encrypted_ballot_new(encrypter->num_selections,
@@ -369,7 +369,7 @@ Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
     }
 
     if (ballot_result.status == VOTING_ENCRYPTER_SUCCESS)
-        encrypted_ballot_count++;
+        _encrypted_ballot_count++;
 
     return ballot_result;
 }

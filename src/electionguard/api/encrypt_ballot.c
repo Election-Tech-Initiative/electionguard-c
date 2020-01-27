@@ -170,7 +170,8 @@ bool API_EncryptBallot_soft_delete_file(char *export_path, char *filename)
         uint32_t result = rename(existing_filename, soft_delete_filename);
         if (result != 0)
         {
-            ok = false;
+            // failure to rename is a valid case
+            //ok = false;
             DEBUG_PRINT(("API_EncryptBallot_soft_delete_file: unable to rename the file\n\n"));
         }
     }

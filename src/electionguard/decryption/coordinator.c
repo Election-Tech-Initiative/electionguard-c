@@ -65,23 +65,26 @@ Decryption_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
                result.coordinator->num_trustees * sizeof(bool));
 
         result.coordinator->tallies_initialized = false;
+        result.coordinator->num_tallies = 0;
     }
 
     return result;
 }
 
-void Decryption_Coordinator_free(Decryption_Coordinator c) 
+void Decryption_Coordinator_free(Decryption_Coordinator coordinator) 
 {
-    for(uint32_t i = 0; i < c->num_tallies; i++)
+    for(uint32_t i = 0; i < coordinator->num_tallies && coordinator->tallies_initialized; i++)
     {
-        Crypto_encryption_rep_free(&c->tallies[i]);
+        Crypto_encryption_rep_free(&coordinator->tallies[i]);
     }
 
-    free(c); 
+    coordinator->tallies_initialized = false;
+
+    free(coordinator); 
 }
 
 enum Decryption_Coordinator_status
-Decryption_Coordinator_receive_share(Decryption_Coordinator c,
+Decryption_Coordinator_receive_share(Decryption_Coordinator coordinator,
                                      struct decryption_share share)
 {
     enum Decryption_Coordinator_status status = DECRYPTION_COORDINATOR_SUCCESS;

@@ -983,10 +983,10 @@ bool Crypto_encryption_fprint(FILE *out, const struct encryption_rep *rep)
 }
 
 struct Crypto_encrypted_ballot_new_r
-Crypto_encrypted_ballot_new(uint32_t num_selections, uint64_t id)
+Crypto_encrypted_ballot_new(uint32_t num_selections, uint64_t ballot_id)
 {
     struct Crypto_encrypted_ballot_new_r result;
-    result.result.id = id;
+    result.result.id = ballot_id;
     result.result.num_selections = num_selections;
     result.result.selections =
         malloc(num_selections * sizeof(*result.result.selections));
@@ -1025,5 +1025,11 @@ void Crypto_encrypted_ballot_free(struct encrypted_ballot_rep *ballot)
         Crypto_encryption_rep_free(&ballot->selections[i]);
     }
     free(ballot->selections);
+    
+    if (ballot->dis_proof != NULL)
+    {
+        Crypto_dis_proof_free(ballot->dis_proof);
+    }
+
     Crypto_cp_proof_free(&ballot->cp_proof);
 }

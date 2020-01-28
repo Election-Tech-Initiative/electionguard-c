@@ -6,4 +6,6 @@
 
 bool create_directory(const char *path);
 
+bool Directory_exists(const char *path);
+
 #endif /* __DIRECTORY_H__ */

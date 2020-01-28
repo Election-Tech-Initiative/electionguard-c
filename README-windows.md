@@ -23,13 +23,13 @@
             cmake --build build
 
     3. You should now have a `electionguard.a` or `electionguard.dll` (depending on the how cmake was configured).
-3. (Optional) Build the simple example election driver.
+3. (Optional) Build the api example election driver.
     1. Open a command prompt and navigate to the directory with the ElectionGuard-SDK-C-Implementation repo.
     2. Run the following commands:
 
             set PATH=%PATH%;C:\path\to\ElectionGuard-SDK-C-Implementation\build\
             set CMAKE_PREFIX_PATH=C:\path\to\ElectionGuard-SDK-C-Implementation\build\ElectionGuard
-            cmake -S examples/simple -B simple_build -G "MSYS Makefiles"
-            cmake --build simple_build --target simple
+            cmake -S examples/api -B api_build -G "MSYS Makefiles"
+            cmake --build api_build --target api
 
-    3. You should now have a `simple.exe` that simulates some random voters and generates election record artifacts.
+    3. You should now have a `api.exe` that simulates some random voters and generates election record artifacts.

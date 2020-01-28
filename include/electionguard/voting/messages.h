@@ -40,4 +40,12 @@ struct ballot_identifier
     uint8_t const *bytes;
 };
 
+struct external_identifier_message
+{
+    uint64_t len;
+    uint8_t const *bytes;
+};
+
+bool Messages_are_equal(struct register_ballot_message *left_message, struct register_ballot_message *right_message);
+
 #endif /* __VOTING_MESSAGES_H__ */

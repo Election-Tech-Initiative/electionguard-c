@@ -2,6 +2,8 @@
 #define __VOTING_ENCRYPTER_H__
 
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include <electionguard/crypto.h>
 #include <electionguard/voting/messages.h>
@@ -60,6 +62,7 @@ void Voting_Encrypter_free(Voting_Encrypter encrypter);
  * when done, ie. they own them. */
 struct Voting_Encrypter_encrypt_ballot_r
 Voting_Encrypter_encrypt_ballot(Voting_Encrypter encrypter,
+                                char *external_identifier,
                                 bool const *selections,
                                 uint32_t expected_num_selected);
 
@@ -70,6 +73,14 @@ struct Voting_Encrypter_encrypt_ballot_r
     struct ballot_tracker tracker;
     struct ballot_identifier id;
 };
-bool Validate_selections(bool const *selections, uint32_t num_selections, uint32_t expected_num_selected);
+bool Validate_selections(
+    bool const *selections, uint32_t num_selections, uint32_t expected_num_selected);
+
+/** Write a single ballot to out, using the format
+ *  <ballot_id> TAB <encrypted_ballot_message> \n
+ */
+enum Voting_Encrypter_status
+Voting_Encrypter_write_ballot(FILE *out, char *external_identifier,
+                                struct register_ballot_message *encrypted_ballot_message);
 
 #endif /* __VOTING_ENCRYPTER_H__ */

@@ -6,7 +6,10 @@
 #include <electionguard/decryption/trustee.h>
 
 /**
- * Perform all the steps necessary to tally the encypted ballots file and decrypt the tallies. */
+ * Perform all the steps necessary to tally the encypted ballots file and decrypt the tallies. 
+ * * @param char **output_filename return value of the generated file.  
+ *                                 when successful, caller is responsible for Freeing output_filename
+ */
 bool API_TallyVotes(struct api_config config,
                     struct trustee_state *trustee_states,
                     uint32_t num_decrypting_trustees,

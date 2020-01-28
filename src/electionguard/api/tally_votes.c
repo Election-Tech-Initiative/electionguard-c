@@ -3,6 +3,8 @@
 
 #include <electionguard/api/tally_votes.h>
 
+#include <log.h>
+
 #include "api/base_hash.h"
 #include "api/filename.h"
 #include "directory.h"
@@ -23,7 +25,7 @@ static bool export_tally_votes(char *export_path, char *filename_prefix,
 
 // Global state
 static struct api_config api_config;
-static Decryption_Coordinator coordinator;
+static Decryption_Coordinator _decryption_coordinator;
 static Decryption_Trustee decryption_trustees[MAX_TRUSTEES];
 
 bool API_TallyVotes(struct api_config config,
@@ -88,21 +90,23 @@ bool API_TallyVotes(struct api_config config,
             decryption_trustees[i] = NULL;
         }
 
-    if (coordinator != NULL)
+    if (_decryption_coordinator != NULL)
     {
-        Decryption_Coordinator_free(coordinator);
-        coordinator = NULL;
+        Decryption_Coordinator_free(_decryption_coordinator);
+        _decryption_coordinator = NULL;
     }
 
     Crypto_parameters_free();
-
+    
     return ok;
 }
 
 void API_TallyVotes_free(char *output_filename)                                       
 {
     if (output_filename != NULL)
+    {
         free(output_filename);
+    }
 }                                                            
 
 bool initialize_coordinator(void)
@@ -115,7 +119,7 @@ bool initialize_coordinator(void)
     if (result.status != DECRYPTION_COORDINATOR_SUCCESS)
         ok = false;
     else
-        coordinator = result.coordinator;
+        _decryption_coordinator = result.coordinator;
 
     return ok;
 }
@@ -198,7 +202,7 @@ bool decrypt_tally_shares()
         if (ok)
         {
             enum Decryption_Coordinator_status status =
-                Decryption_Coordinator_receive_share(coordinator, share);
+                Decryption_Coordinator_receive_share(_decryption_coordinator, share);
             if (status != DECRYPTION_COORDINATOR_SUCCESS)
                 ok = false;
         }
@@ -225,7 +229,7 @@ bool request_missing_trustee_tally_shares(
         if (ok)
         {
             struct Decryption_Coordinator_all_shares_received_r result =
-                Decryption_Coordinator_all_shares_received(coordinator);
+                Decryption_Coordinator_all_shares_received(_decryption_coordinator);
 
             if (result.status != DECRYPTION_COORDINATOR_SUCCESS)
                 ok = false;
@@ -271,7 +275,7 @@ bool decrypt_tally_decryption_fragments(
             {
                 enum Decryption_Coordinator_status status =
                     Decryption_Coordinator_receive_fragments(
-                        coordinator, decryption_fragments);
+                        _decryption_coordinator, decryption_fragments);
 
                 if (status != DECRYPTION_COORDINATOR_SUCCESS)
                     ok = false;
@@ -293,31 +297,53 @@ bool export_tally_votes(char *export_path, char *filename_prefix,
 {
     bool ok = true;
     char *default_prefix = "electionguard_tally-";
-    *output_filename = malloc(FILENAME_MAX * sizeof(char));
-    ok = generate_unique_filename(export_path, filename_prefix, default_prefix, *output_filename);   
-#ifdef DEBUG_PRINT 
-    printf("API_TALLYVOTES :: generated unique filename for export at \"%s\"\n", *output_filename);
-#endif
+    *output_filename = malloc(FILENAME_MAX + 1);
+    if (output_filename == NULL)
+    {
+        ok = false;
+        return ok;
+    }
+    
+    if (ok)
+    {
+        ok = generate_unique_filename(export_path, filename_prefix, default_prefix, *output_filename);   
+        DEBUG_PRINT(("API_TALLYVOTES :: generated unique filename for export at \"%s\"\n", *output_filename));
+    }
 
-    if (ok) {
+    if (ok && !Directory_exists(export_path)) 
+    {
         ok = create_directory(export_path);
     }
 
     if (ok)
     {
         FILE *out = fopen(*output_filename, "w+");
+        if (out == NULL)
+        {
+            INFO_PRINT(("API_TallyVotes: error accessing file\n"));
+            return false;
+        }
 
         enum Decryption_Coordinator_status status =
-            Decryption_Coordinator_all_fragments_received(coordinator, out, tally_results_array);
+            Decryption_Coordinator_all_fragments_received(_decryption_coordinator, out, tally_results_array);
 
         if (status != DECRYPTION_COORDINATOR_SUCCESS)
+        {
             ok = false;
+        }
 
         if (out != NULL)
         {
             fclose(out);
             out = NULL;
         }
+    }
+
+    if (!ok)
+    {
+        free(output_filename);
+        output_filename = NULL;
+        DEBUG_PRINT(("API_TallyVotes: error exporting to: %s\n", *output_filename));
     }
 
     return ok;

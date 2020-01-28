@@ -14,7 +14,7 @@ If new to the project,
 2. Install according to [ReadMe](./README.rst)
 OR
 refer to [Documentation](https://electionguard.github.io/ElectionGuard-SDK-C-Documentation/)
-3. Once you're up and running, be sure to run the simple election test
+3. Once you're up and running, be sure to run the API sample election test
 
 ⚠ Note: If you get stuck, take a look at our [GitHub Action](./.github/workflows/pr-workflow.yml)
 

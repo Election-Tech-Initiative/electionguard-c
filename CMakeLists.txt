@@ -12,8 +12,8 @@ set(CMAKE_C_EXTENSIONS OFF)
 message("Generated with config types: ${CMAKE_CONFIGURATION_TYPES}")
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
-    message("setting DEBUG_PRINT")
-    add_compile_definitions(DEBUG_PRINT)
+    message("setting DEBUG during compile")
+    add_compile_definitions(DEBUG)
 ENDIF()
 
 
@@ -22,11 +22,13 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/filename.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/create_election.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/encrypt_ballot.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/api/load_ballots.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/record_ballots.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/api/tally_votes.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto_reps.h
+    ${PROJECT_SOURCE_DIR}/src/electionguard/voting/ballot_collection.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/coordinator.c
-    ${PROJECT_SOURCE_DIR}/src/electionguard/voting/num_ballots.h
+    ${PROJECT_SOURCE_DIR}/src/electionguard/voting/messages.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/message_reps.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/nouns.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/voting/tracker.c
@@ -54,6 +56,7 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/keyceremony/trustee.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/uint4096.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/bignum.c
+    ${PROJECT_SOURCE_DIR}/src/electionguard/log.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/sha2-openbsd.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/sha2-openbsd.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/crypto.c
@@ -62,15 +65,15 @@ add_library(electionguard
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.h
     ${PROJECT_SOURCE_DIR}/src/electionguard/random_source.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/trustee_state_rep.h
-    ${PROJECT_SOURCE_DIR}/src/electionguard/file.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/directory.c
     ${PROJECT_SOURCE_DIR}/src/electionguard/directory.h
+    ${PROJECT_SOURCE_DIR}/src/electionguard/uthash.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/config.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/create_election.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/encrypt_ballot.h
+    ${PROJECT_SOURCE_DIR}/include/electionguard/api/load_ballots.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/record_ballots.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/api/tally_votes.h
-    ${PROJECT_SOURCE_DIR}/include/electionguard/file.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/max_values.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/trustee_state.h
     ${PROJECT_SOURCE_DIR}/include/electionguard/voting/messages.h
@@ -109,8 +112,8 @@ if (MINGW)
     set_target_properties(electionguard PROPERTIES PREFIX "")
 endif()
 
-# Set the public include directory depending on if the target is being exported
-# or installed
+# Set the public include directory depending on 
+# if the target is being exported or installed
 target_include_directories(electionguard
     SYSTEM PUBLIC
         $<INSTALL_INTERFACE:include>
@@ -148,17 +151,8 @@ install(
 
 add_subdirectory(docs)
 
-file(MAKE_DIRECTORY  "${CMAKE_CURRENT_BINARY_DIR}/simple_build")
+file(MAKE_DIRECTORY  "${CMAKE_CURRENT_BINARY_DIR}/api_build")
 set(CMAKE_CONFIGURATION_TYPES "Debug" CACHE STRING "" FORCE)
-
-add_test(NAME build_simple
-   COMMAND "${CMAKE_COMMAND}"
-      -E env ElectionGuard_DIR=${CMAKE_CURRENT_BINARY_DIR}/ElectionGuard
-      "${CMAKE_CTEST_COMMAND}"
-        --build-and-test "${PROJECT_SOURCE_DIR}/examples/simple" "${CMAKE_CURRENT_BINARY_DIR}/simple_build"
-        --build-generator ${CMAKE_GENERATOR}
-        --test-command simple
-)
 
 add_test(NAME build_api
    COMMAND "${CMAKE_COMMAND}"

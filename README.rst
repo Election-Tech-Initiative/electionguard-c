@@ -53,11 +53,17 @@ To build the SDK static library ``libelectionguard.a``, run
 
    cmake --build build
 
+Alternatively there is a `Makefile` to wrap the cmake commands:
+
+.. code:: sh
+
+    make build
+
 Testing
 --------
 
-Currently you can exercise the SDK by running the :doc:`example client
-<examples/simple>`. We include a cmake test to do so automatically. You can
+Currently you can exercise the SDK by running the :doc:`api client
+<examples/api>`. We include a cmake test to do so automatically. You can
 also execute the client directly to better examine the output it produces.
 
 .. warning::
@@ -95,11 +101,17 @@ to refer to the built library, and build the client.
 
 .. code:: sh
 
-   mkdir simple_build
-   ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/simple -B simple_build
-   cmake --build simple_build --target simple
+   mkdir api_build
+   ElectionGuard_DIR="$PWD/build/ElectionGuard" cmake -S examples/api -B api_build
+   cmake --build api_build --target api
 
-The built binary should be located at :file:`simple_build/simple`.
+The built binary should be located at :file:`api_build/api`.
+
+alternatively, you can use the convenience Makefile
+
+.. code:: sh
+
+    make run-api
 
 
 Debugging

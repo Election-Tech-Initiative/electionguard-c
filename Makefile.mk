@@ -32,9 +32,9 @@ endif
 build-debug: clean
 	if [ ! -d "build" ]; then mkdir build; fi
 ifeq ($(OPERATING_SYSTEM),Windows)
-	cmake -S . -B build -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Debug
+	cmake -S . -B build -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=ON
 else
-	cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+	cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=ON
 endif
 	cmake --build build
 

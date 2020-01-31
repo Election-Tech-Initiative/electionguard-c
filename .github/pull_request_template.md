@@ -1,3 +1,14 @@
+### Issue
+*Link your PR to an issue*
+
+Fixes #___
+
+### Description
+*Please describe your pull request.*
+
+### Testing
+*Describe the best way to test or validate your PR.*
+
 ### Checklist
 🚨Please review the [guidelines for contributing](../CONTRIBUTING.md) to this repository.
 
@@ -10,9 +21,5 @@
 - [ ] ✅ **DO** make sure not to introduce any compiler warnings.
 - [ ] ❌**AVOID** breaking the continuous integration build.
 - [ ] ❌**AVOID** making significant changes to the overall architecture.
-
-
-### Description
-Please describe your pull request.
 
 💔Thank you!

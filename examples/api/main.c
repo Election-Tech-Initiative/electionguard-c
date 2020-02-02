@@ -74,16 +74,20 @@ int main()
 
     struct trustee_state trustee_states[MAX_TRUSTEES];
     ok = API_CreateElection(&config, trustee_states);
+    if (!ok) printf("Create Election Failed!");
 
     for (uint32_t i = 0; i < NUM_TRUSTEES && ok; i++)
     {
         if (trustee_states[i].bytes == NULL)
+        {
+            printf("trustee_state %d is NULL - FAIL!", i);
             ok = false;
+        }
     }
 
     // Encrypt Ballots
 
-    printf("\n--- Encrypt Ballots ---\n\n");
+    if (ok) printf("\n--- Encrypt Ballots ---\n\n");
     
     struct register_ballot_message memory_encrypted_ballots[NUM_RANDOM_BALLOTS];
     struct test_ballot testBallots[NUM_RANDOM_BALLOTS];
@@ -105,6 +109,7 @@ int main()
 
     if (ok)
     {
+        printf("Soft Deleting existing file\n");
         ok = API_EncryptBallot_soft_delete_file(encrypted_output_path, encrypted_output_prefix);
         
         for (uint32_t i = 0; i < NUM_RANDOM_BALLOTS && ok; i++)
@@ -154,7 +159,7 @@ int main()
     // and pass it to the tally functions, but this is not strictly necessary
     // from an API Perspective.
 
-    printf("\n--- Load Ballots ---\n\n");
+    if (ok) printf("\n--- Load Ballots ---\n\n");
 
     // load the ballot ID's so we can cast/spoil them
     char *loaded_external_identifiers[NUM_RANDOM_BALLOTS];
@@ -166,7 +171,7 @@ int main()
     {
         ok = API_LoadBallots(
             0, 
-            NUM_RANDOM_BALLOTS, 
+            MAX_BALLOT_PAYLOAD, 
             NUM_SELECTIONS, 
             encrypted_ballots_filename, 
             loaded_external_identifiers,
@@ -207,7 +212,7 @@ int main()
 
     // Register & Record Cast/Spoil Multiple Ballots
 
-    printf("\n\n--- Randomly Assigning Ballots to be Cast or Spoil Arrays ---\n\n");
+    if (ok) printf("\n\n--- Randomly Assigning Ballots to be Cast or Spoil Arrays ---\n\n");
 
     uint32_t current_cast_index = 0;
     uint32_t current_spoiled_index = 0;
@@ -244,7 +249,7 @@ int main()
         ok = false;
     }
 
-    printf("\n--- Record Ballots (Register, Cast, and Spoil) ---\n\n");
+    if (ok) printf("\n--- Record Ballots (Register, Cast, and Spoil) ---\n\n");
 
     char *cast_and_spoiled_ballots_filename = NULL;
     char *casted_trackers[current_cast_index];
@@ -298,7 +303,7 @@ int main()
 
     // Tally Votes & Decrypt Results
 
-    printf("\n--- Tally & Decrypt Votes ---\n\n");
+    if (ok) printf("\n--- Tally & Decrypt Votes ---\n\n");
 
     char *tally_filename = NULL;
     uint32_t tally_results[config.num_selections];
@@ -369,7 +374,15 @@ int main()
 
     API_CreateElection_free(config.joint_key, trustee_states);
 
-    printf("\n--- Done! ---\n\n");
+    if (ok)
+    {
+        printf("\n--- Done! ---\n\n");
+    } 
+    else
+    {
+        printf("\n--- FAILED! ---\n\n");
+    }
+    
 
     if (ok)
         return EXIT_SUCCESS;

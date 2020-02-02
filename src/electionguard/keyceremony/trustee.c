@@ -7,6 +7,8 @@
 #include <electionguard/max_values.h>
 #include <electionguard/secure_zero_memory.h>
 
+#include <log.h>
+
 #include "keyceremony/message_reps.h"
 #include "serialize/keyceremony.h"
 #include "serialize/trustee_state.h"
@@ -101,21 +103,28 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t, raw_hash base_hash_code)
     // Generate the keypair
     struct Crypto_gen_keypair_r crypto_result =
         Crypto_gen_keypair(t->threshold, base_hash_code);
-    // check that we generated good proofs (right now this call crashes if the proofs fail)
-    if(!Crypto_check_keypair_proof(crypto_result.public_key, base_hash_code)){
-        crypto_result.status=CRYPTO_UNKNOWN_ERROR;
-    }
 
+    // check that we generated good proofs (right now this call crashes if the proofs fail)
+    if(!Crypto_check_keypair_proof(crypto_result.public_key, base_hash_code))
+    {
+        DEBUG_PRINT(("\nKeyCeremony_Trustee_generate_key: Crypto_check_keypair_proof - FAILED!\n"));
+        crypto_result.status = CRYPTO_UNKNOWN_ERROR;
+    }
+    
     switch (crypto_result.status)
     {
-    case CRYPTO_INSUFFICIENT_MEMORY:
-        result.status = KEYCEREMONY_TRUSTEE_INSUFFICIENT_MEMORY;
-        break;
-    case CRYPTO_SUCCESS:
-        break;
-    default:
-        //@ assert false;
-        assert(false && "unreachable");
+        case CRYPTO_INSUFFICIENT_MEMORY:
+            result.status = KEYCEREMONY_TRUSTEE_INSUFFICIENT_MEMORY;
+            break;
+        case CRYPTO_IO_ERROR:
+            result.status = KEYCEREMONY_TRUSTEE_IO_ERROR;
+            break;
+        case CRYPTO_SUCCESS:
+            break;
+        default:
+            //@ assert false;
+            DEBUG_PRINT(("\nKeyCeremony_Trustee_generate_key: CRYPTO_UNKNOWN_ERROR!\n"));
+            assert(false && "unreachable");
     };
 
     // Generate the RSA keys
@@ -127,10 +136,10 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t, raw_hash base_hash_code)
         Crypto_public_key_copy(&t->public_keys[t->index],
                                &crypto_result.public_key);
 
-        printf("Trustee %d generated public key:\n", t->index);
+        DEBUG_PRINT(("Trustee %d generated public key:\n", t->index));
         print_base16(t->public_keys[t->index].coef_commitments[0]);
-        // printf("Trustee %d generated private key:\n", t->index);
-        // print_base16(t->private_key.coefficients[0]);
+        TRACE_PRINT(("Trustee %d generated private key:\n", t->index));
+        print_base16(t->private_key.coefficients[0]);
     }
 
     if (result.status == KEYCEREMONY_TRUSTEE_SUCCESS)
@@ -164,7 +173,9 @@ KeyCeremony_Trustee_generate_key(KeyCeremony_Trustee t, raw_hash base_hash_code)
         Crypto_rsa_public_key_free(&message_rep.rsa_public_key);
 
         if (state.status != SERIALIZE_STATE_WRITING)
+        {
             result.status = KEYCEREMONY_TRUSTEE_SERIALIZE_ERROR;
+        }
         else
         {
             result.message = (struct key_generated_message){

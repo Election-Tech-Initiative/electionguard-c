@@ -8,6 +8,8 @@
 #include <stdlib.h>
 //#define DEBUG_PRINT =0
 
+#include <log.h>
+
 void Crypto_hash_final(struct hash *out, SHA2_CTX *context)
 {
     uint8_t bytes[HASH_DIGEST_SIZE_BYTES];
@@ -22,15 +24,28 @@ void Crypto_hash_reduce(struct hash *out, raw_hash bytes)
     mod_q(out->digest, out->digest);
 }
 
-// NOTE: Currently no error handling is possible for this function call. Consider changing the function signature in the future
-// 
+// NOTE: Currently no error handling is possible for this function call. 
+// Consider changing the function signature in the future
 void Crypto_hash_update_bignum_q(SHA2_CTX *context, mpz_t num)
 {
-    uint8_t *buf = (uint8_t*)export_to_256(num);
-    if (buf != NULL)
+    uint64_t *buf = NULL;
+    bignum_status export_status = export_to_256(num, &buf);
+    if (export_status == BIGNUM_SUCCESS)
     {
-        SHA256Update(context, buf, 256 / 8);
-        free(buf);
+        if (buf != NULL)
+        {
+            SHA256Update(context, (uint8_t *)buf, 256 / 8);
+            free(buf);
+        }
+        else
+        {
+            DEBUG_PRINT(("\nCrypto_hash_update_bignum_q: tmp is null - FAILED!\n"));
+        }
+    }
+    else
+    {
+        // TODO: return something
+        DEBUG_PRINT(("\nCrypto_hash_update_bignum_q: export_to_256 - FAILED!\n"));
     }
 }
 
@@ -53,12 +68,11 @@ bool Crypto_public_key_equal(struct public_key const *key1,
     {
         ok = ok && (0 == mpz_cmp(key1->coef_commitments[i],
                                  key2->coef_commitments[i]));
-#ifdef DEBUG_PRINT
-        printf("Checking\n");
+
+        TRACE_PRINT(("\nCrypto_public_key_equal: Checking\n"));
         print_base16(key1->coef_commitments[i]);
-        printf("=");
+        TRACE_PRINT("=");
         print_base16(key2->coef_commitments[i]);
-#endif
     }
     return ok;
 }
@@ -945,6 +959,7 @@ int mpz_t_fscan(FILE *in, mpz_t out)
     uint4096 tmp = malloc(sizeof(struct uint4096_s));
     if (tmp == NULL)
     {
+        // TODO: return non-zero failure code
         return 0;
     }
 
@@ -954,16 +969,29 @@ int mpz_t_fscan(FILE *in, mpz_t out)
     return res;
 }
 
-int mpz_t_fprint(FILE *out, const mpz_t z)
+bool mpz_t_fprint(FILE *out, const mpz_t z)
 {
-    int ret = 0;
-    uint4096 tmp = export_to_uint4096(z);
-    if (tmp != NULL)
+    bool ret = false;
+    uint4096 tmp = NULL;
+    bignum_status export_status = export_to_uint4096(z, &tmp);
+    if (export_status == BIGNUM_SUCCESS)
     {
-        ret = uint4096_fprint(out, tmp);
-        free(tmp);
+        if (tmp != NULL)
+        {
+            ret = uint4096_fprint(out, tmp);
+            free(tmp);
+        }
+        else
+        {
+            DEBUG_PRINT(("\nmpz_t_fprint: temp is null - FAILED!\n"));
+        }
+        
     }
-
+    else
+    {
+        DEBUG_PRINT(("\nmpz_t_fprint: export_to_uint4096 - FAILED!\n"));
+    }
+    
     return ret;
 }
 

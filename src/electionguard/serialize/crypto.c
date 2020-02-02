@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <log.h>
+
 void Serialize_reserve_uint64_ts(struct serialize_state *state,
                                  const_uint4096 data, int ct)
 {
@@ -13,36 +15,58 @@ void Serialize_reserve_uint64_ts(struct serialize_state *state,
 void Serialize_write_uint64_ts(struct serialize_state *state, const mpz_t data,
                                int ct)
 {
-    uint64_t *tmp = export_to_64_t(data, ct);
-    if (tmp != NULL)
+    uint64_t *tmp = NULL;
+    bignum_status export_status = export_to_64_t(data, ct, &tmp);
+    if (export_status == BIGNUM_SUCCESS)
     {
-        for (uint32_t i = 0; i < ct; i++)
+        if (tmp != NULL)
         {
-            Serialize_write_uint64(state, &tmp[i]);
+            for (uint32_t i = 0; i < ct; i++)
+            {
+                Serialize_write_uint64(state, &tmp[i]);
+            }
+            free(tmp);
         }
-        free(tmp);
+        else
+        {
+            DEBUG_PRINT(("\nSerialize_write_uint64_ts: tmp is null - FAILED!\n"));
+        } 
     }
     else
     {
-        state->status = SERIALIZE_STATE_INSUFFICIENT_MEMORY;
+        DEBUG_PRINT(("\nSerialize_write_uint64_ts: export_to_64_t - FAILED!\n"));
+        state->status = export_status == BIGNUM_IO_ERROR 
+            ? SERIALIZE_STATE_IO_ERROR 
+            : SERIALIZE_STATE_INSUFFICIENT_MEMORY;
 	}
 }
 
 void Serialize_write_uint64_ts_pad(struct serialize_state *state, const mpz_t data,
                                int ct)
 {
-    uint64_t *tmp = export_to_64_t_pad(data, ct);
-    if (tmp != NULL)
+    uint64_t *tmp = NULL;
+    bignum_status export_status = export_to_64_t_pad(data, ct, &tmp);
+    if (export_status == BIGNUM_SUCCESS)
     {
-        for (uint32_t i = 0; i < ct; i++)
+        if (tmp != NULL)
         {
-            Serialize_write_uint64(state, &tmp[i]);
+            for (uint32_t i = 0; i < ct; i++)
+            {
+                Serialize_write_uint64(state, &tmp[i]);
+            }
+            free(tmp);
         }
-        free(tmp);
+        else
+        {
+            DEBUG_PRINT(("\nSerialize_write_uint64_ts_pad: tmp is null - FAILED!\n"));
+        }
     }
     else
     {
-        state->status = SERIALIZE_STATE_INSUFFICIENT_MEMORY;
+        DEBUG_PRINT(("\nSerialize_write_uint64_ts_pad: export_to_64_t_pad - FAILED!\n"));
+        state->status = export_status == BIGNUM_IO_ERROR 
+            ? SERIALIZE_STATE_IO_ERROR 
+            : SERIALIZE_STATE_INSUFFICIENT_MEMORY;
     }
 }
 
@@ -125,18 +149,29 @@ void Serialize_reserve_hash(struct serialize_state *state)
 
 void Serialize_write_hash(struct serialize_state *state, struct hash data)
 {
-    uint64_t *tmp = export_to_256(data.digest);
-    if (tmp != NULL)
+    uint64_t *tmp = NULL;
+    bignum_status export_status = export_to_256(data.digest, &tmp);
+    if (export_status == BIGNUM_SUCCESS)  
     {
-        for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH / 8; i++)
+        if (tmp != NULL)
         {
-            Serialize_write_uint64(state, &tmp[i]);
+            for (uint32_t i = 0; i < SHA256_DIGEST_LENGTH / 8; i++)
+            {
+                Serialize_write_uint64(state, &tmp[i]);
+            }
+            free(tmp);
         }
-        free(tmp);
+        else
+        {
+            DEBUG_PRINT(("\nSerialize_write_hash: tmp is null - FAILED!\n"));
+        }
     }
     else
     {
-        state->status = SERIALIZE_STATE_INSUFFICIENT_MEMORY;
+        DEBUG_PRINT(("\nSerialize_write_hash: export_to_256 - FAILED!\n"));
+        state->status = export_status == BIGNUM_IO_ERROR 
+            ? SERIALIZE_STATE_IO_ERROR 
+            : SERIALIZE_STATE_INSUFFICIENT_MEMORY;
     }
 }
 

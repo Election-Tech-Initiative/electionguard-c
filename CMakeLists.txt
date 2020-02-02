@@ -14,6 +14,7 @@ message("Generated with config types: ${CMAKE_CONFIGURATION_TYPES}")
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
     message("setting DEBUG during compile")
     add_compile_definitions(DEBUG)
+    #add_compile_definitions(DEBUG_PRINT)
 ENDIF()
 
 

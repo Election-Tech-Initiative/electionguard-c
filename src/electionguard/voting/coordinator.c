@@ -4,6 +4,8 @@
 
 #include <electionguard/voting/coordinator.h>
 
+#include <log.h>
+
 #include "crypto_reps.h"
 #include "serialize/crypto.h"
 #include "serialize/voting.h"
@@ -452,6 +454,7 @@ Voting_Coordinator_read_ballot(FILE *in,
         int num_read = fscanf(in, "%s", out_external_identifier);
         if (num_read == EOF)
         {
+            DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: VOTING_COORDINATOR_END_OF_FILE\n"));
             status = VOTING_COORDINATOR_END_OF_FILE;
         }
         else if (num_read != 1)
@@ -466,14 +469,17 @@ Voting_Coordinator_read_ballot(FILE *in,
         // read the nonce encoding
         int num_read = fscanf(in, "\t(");
         if (0 != num_read)
-        {    
+        {
             status = VOTING_COORDINATOR_IO_ERROR;
         }
 
         if (status == VOTING_COORDINATOR_SUCCESS)
         {
             if (!mpz_t_fscan(in, out_selections[i].nonce_encoding))
+            {
+                DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: mpz_t_fscan nonce_encoding VOTING_COORDINATOR_IO_ERROR\n"));
                 status = VOTING_COORDINATOR_IO_ERROR;
+            }
         }
 
         // move the cursor to the separator
@@ -481,21 +487,28 @@ Voting_Coordinator_read_ballot(FILE *in,
         {
             num_read = fscanf(in, ",");
             if (0 != num_read)
+            {
                 status = VOTING_COORDINATOR_IO_ERROR;
+            }
         }
 
         // read the message encoding
         if (status == VOTING_COORDINATOR_SUCCESS)
         {
             if (!mpz_t_fscan(in, out_selections[i].message_encoding))
+            {
+                DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: mpz_t_fscan message_encoding VOTING_COORDINATOR_IO_ERROR\n"));
                 status = VOTING_COORDINATOR_IO_ERROR;
+            }
         }
 
         if (status == VOTING_COORDINATOR_SUCCESS)
         {
             num_read = fscanf(in, ")");
             if (0 != num_read)
+            {
                 status = VOTING_COORDINATOR_IO_ERROR;
+            }
         }
     }
 
@@ -519,9 +532,7 @@ Voting_Coordinator_import_encrypted_ballots(Voting_Coordinator coordinator,
         return status;
     }
 
-#ifdef DEBUG_PRINT
-        printf("Voting_Coordinator_import_encrypted_ballots: attempting to import: %ld\n", count);
-#endif
+    DEBUG_PRINT(("Voting_Coordinator_import_encrypted_ballots: attempting to import: %ld\n", count));
 
     int scanResult = 0;
     enum Voting_Coordinator_status load_status = VOTING_COORDINATOR_SUCCESS;
@@ -548,9 +559,12 @@ Voting_Coordinator_import_encrypted_ballots(Voting_Coordinator coordinator,
             out_external_identifiers[i], 
             selections);
 
-#ifdef DEBUG_PRINT
-        printf("Voting_Coordinator_import_encrypted_ballots: imported: %s\n", out_external_identifiers[i]);
-#endif
+        if (load_status != VOTING_COORDINATOR_SUCCESS)
+        {
+            break;
+        }
+
+        DEBUG_PRINT(("Voting_Coordinator_import_encrypted_ballots: imported: %s\n", out_external_identifiers[i]));
 
         // reconstruct the original register_ballot_message
         struct encrypted_ballot_rep encrypted_ballot;
@@ -591,6 +605,8 @@ Voting_Coordinator_import_encrypted_ballots(Voting_Coordinator coordinator,
         // clean up
         // TODO: free encryption rep?
 
+        // TODO: write scan result count to out param
+        // so consumers know how many were loaded
         scanResult++;
     }
 

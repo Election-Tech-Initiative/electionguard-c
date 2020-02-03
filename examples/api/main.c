@@ -48,7 +48,7 @@ static bool result_equals_expected_selections(
 uint32_t const NUM_TRUSTEES = 3;
 uint32_t const THRESHOLD = 2; 
 uint32_t const NUM_ENCRYPTERS = 3;
-uint32_t const NUM_SELECTIONS = 12;                  // the number of total contest selections for an election
+uint32_t const NUM_SELECTIONS = 3;                  // the number of total contest selections for an election
 uint32_t const DECRYPTING_TRUSTEES = 2;             // must be >= THRESHOLD && <= NUM_TRUSTEES
 uint32_t const NUM_RANDOM_BALLOTS = 5;              // the number of ballots to use when executing the test
 

@@ -33,7 +33,7 @@ enum MAX_BALLOTS_e
      * to a Voting Coordinator for 
      * Registration, Casting, or Spoiling at one time
      */
-    MAX_BALLOT_PAYLOAD = 2000
+    MAX_BALLOT_PAYLOAD = 1500
 };
 
 /**

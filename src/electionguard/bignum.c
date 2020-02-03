@@ -1,11 +1,11 @@
-#include <assert.h>
-#include <gmp.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "uint4096.h"
+#include <log.h>
+
+#include "bignum.h"
 
 uint64_t old_p_array[64] = {
     0xFFFFFFFFFFFFFFFF, 0xC90FDAA22168C234, 0xC4C6628B80DC1CD1,
@@ -112,7 +112,7 @@ void Crypto_parameters_free()
 void print_base16(const mpz_t z)
 {
     char *resStr = mpz_get_str(NULL, 16, z);
-    printf("%.20s...\n", resStr);
+    TRACE_PRINT(("%.20s...\n", resStr));
     //printf("%s\n", resStr);
     free(resStr);
 }
@@ -121,36 +121,32 @@ void pow_mod_p(mpz_t res, const mpz_t base, const mpz_t exp)
 {
     mpz_powm(res, base, exp, p);
 
-#ifdef DEBUG_PRINT
-    printf("Performing operation powmod (base^exp)%%p");
-    printf("\nbase = ");
+    TRACE_PRINT(("Performing operation powmod (base^exp)%%p"));
+    TRACE_PRINT(("\nbase = "));
     print_base16(base);
-    printf("\nexp = ");
+    TRACE_PRINT(("\nexp = "));
     print_base16(exp);
-    printf("\np = ");
+    TRACE_PRINT(("\np = "));
     print_base16(p);
-    printf("\nresult = ");
+    TRACE_PRINT((("\nresult = ")));
     print_base16(res);
-    printf("\n");
-#endif
+    TRACE_PRINT(("\n"));
 }
 
 void pow_mod_q(mpz_t res, const mpz_t base, const mpz_t exp)
 {
     mpz_powm(res, base, exp, q);
 
-#ifdef DEBUG_PRINT
-    printf("Performing operation powmod (base^exp)%%p");
-    printf("\nbase = ");
+    TRACE_PRINT(("Performing operation powmod (base^exp)%%p"));
+    TRACE_PRINT(("\nbase = "));
     print_base16(base);
-    printf("\nexp = ");
+    TRACE_PRINT(("\nexp = "));
     print_base16(exp);
-    printf("\np = ");
+    TRACE_PRINT(("\np = "));
     print_base16(p);
-    printf("\nresult = ");
+    TRACE_PRINT(("\nresult = "));
     print_base16(res);
-    printf("\n");
-#endif
+    TRACE_PRINT(("\n"));
 }
 
 void mul_mod_p(mpz_t res, const mpz_t a, const mpz_t b)
@@ -231,87 +227,140 @@ void div_mod_q(mpz_t res, const mpz_t num, const mpz_t den)
 
 // Export a mpz to a number of 64 bit ints. If the last int isn't filled out
 // by the number, this function will fail
-uint64_t *export_to_64_t(const mpz_t v, int ct)
+bignum_status export_to_64_t(const mpz_t v, int ct, uint64_t **out_result)
 {
+    TRACE_PRINT(("\nexport_to_64_t: want: %d \n", ct));
+    bignum_status status = BIGNUM_SUCCESS;
+
     uint64_t *result = malloc(sizeof(uint64_t) * ct);
     if (result == NULL)
     {
-        return NULL;
+        status = BIGNUM_INSUFFICIENT_MEMORY;
     }
 
-    size_t written;
-    // print_base16(v);
-    mpz_export(result, &written, 1, 8, 0, 0, v);
-    assert(written == ct);
-    return result;
+    if (status == BIGNUM_SUCCESS)
+    {
+        size_t written;
+        mpz_export(result, &written, 1, 8, 0, 0, v);
+        if (written != ct)
+        {
+            DEBUG_PRINT(("\nexport_to_64_t: have: %d - FAIL!\n", written));
+            status = BIGNUM_IO_ERROR;
+            free(result);
+        } else 
+        {
+            print_base16(v);
+            *out_result = result;
+        }
+    }
+    
+    return status;
 }
 
 // Export a mpz to an array of 64 bit ints. Fills the most significant
 // digits with 0 to fill the entire array. Will fail if more than
 // ct are written.
-uint64_t *export_to_64_t_pad(const mpz_t v, int ct){
+bignum_status export_to_64_t_pad(const mpz_t v, int ct, uint64_t **out_result)
+{
+    TRACE_PRINT(("\export_to_64_t_pad: want: %d \n", ct));
+    bignum_status status = BIGNUM_SUCCESS;
+
     uint64_t *result = malloc(sizeof(uint64_t) * ct);
     if (result == NULL)
     {
-        return NULL;
+        status = BIGNUM_INSUFFICIENT_MEMORY;
     }
 
-    memset(result, 0, sizeof(uint64_t)*ct);
-    uint64_t *tmp = malloc(sizeof(uint64_t) * ct);
-    if (tmp == NULL)
+    // allocate a temp var
+    uint64_t *tmp = NULL;
+    if (status == BIGNUM_SUCCESS)
     {
-        free(result);
-        return NULL;
+        memset(result, 0, sizeof(uint64_t)*ct);
+        tmp = malloc(sizeof(uint64_t) * ct);
+        if (tmp == NULL)
+        {
+            status = BIGNUM_INSUFFICIENT_MEMORY;
+            free(result); 
+        }
     }
 
-    size_t written;
-    mpz_export(tmp, &written, 1, 8, 0, 0, v);
-
-    assert(written <= ct);
-
-    int j=0;
-    for(int i = ct - written; i < ct; i++){
-        result[i]=tmp[j++];
+    // write to tmp var
+    size_t written = 0;
+    if (status == BIGNUM_SUCCESS)
+    {
+        mpz_export(tmp, &written, 1, 8, 0, 0, v);
+        if (written > ct)
+        {
+            DEBUG_PRINT(("\nexport_to_64_t_pad: have: %d - FAIL!\n", written));
+            status = BIGNUM_IO_ERROR;
+            free(result);
+        }
+        else
+        {
+            print_base16(v);
+        } 
     }
 
-    free(tmp);
-    return result;
+    // copy tmp to output
+    if (status == BIGNUM_SUCCESS)
+    {
+        int j=0;
+        for(int i = ct - written; i < ct; i++)
+        {
+            result[i]=tmp[j++];
+        }
+        *out_result = result; 
+    }
+
+    // clean up
+    if (tmp != NULL)
+    {
+        free(tmp);
+    }
+    
+    return status;
 }
 
-uint64_t *export_to_256(mpz_t v) { return export_to_64_t(v, 4); }
+bignum_status export_to_256(mpz_t v, uint64_t **out_result) 
+{ 
+    return export_to_64_t(v, 4, out_result); 
+}
 
-uint4096 export_to_uint4096(mpz_t v)
+bignum_status export_to_uint4096(const mpz_t op, uint4096 *out_result)
 {
+    TRACE_PRINT(("\nexport_to_uint4096: want: 64 \n"));
+    bignum_status status = BIGNUM_SUCCESS;
     uint4096 result = malloc(sizeof(struct uint4096_s));
     if (result == NULL)
     {
-        return NULL;
+        status = BIGNUM_INSUFFICIENT_MEMORY;
     }
 
-    size_t written;
-    mpz_export(&result->words, &written, 1, 8, 0, 0, v);
-    assert(written == 64);
-
-#ifdef DEBUG_PRINT
-
-    printf("Exporting %zu bits", written);
-
-    printf("\nExported to bits\n");
-    print_base16(v);
-    printf("\n");
-#endif
-
-    return result;
+    if (status == BIGNUM_SUCCESS)
+    {
+        size_t written;
+        mpz_export(&result->words, &written, 1, 8, 0, 0, op);
+        if (written != 64)
+        {
+            DEBUG_PRINT(("\nexport_to_uint4096: have: %d - FAIL!\n", written));
+            status = BIGNUM_IO_ERROR;
+            free(result);
+        }
+        else
+        {
+            *out_result = result;
+            print_base16(op);
+        }
+    }
+    return status;
 }
 
 void import_uint4096(mpz_t op, uint4096 v)
 {
     mpz_import(op, 64, 1, 8, 0, 0, v->words);
-#ifdef DEBUG_PRINT
-    printf("\nImported from bits\n");
+
+    TRACE_PRINT(("\nimport_uint4096:\n"));
     print_base16(op);
-    printf("\n");
-#endif
 }
 
 void import_uint64_ts(mpz_t op, uint64_t *v, int ct)

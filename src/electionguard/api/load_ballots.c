@@ -143,6 +143,7 @@ API_LoadBallots_status load_ballots(uint64_t start_index,
         case VOTING_COORDINATOR_INSUFFICIENT_MEMORY:
             return API_LOADBALLOTS_INSUFFICIENT_MEMORY;
         // TODO: other cases
+        case VOTING_COORDINATOR_END_OF_FILE:
         case VOTING_COORDINATOR_SUCCESS:
         default:
             return API_LOADBALLOTS_SUCCESS;

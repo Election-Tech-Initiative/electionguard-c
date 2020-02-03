@@ -396,7 +396,9 @@ Voting_Encrypter_write_ballot(FILE *out, char *external_identifier,
         Serialize_read_encrypted_ballot(&state, &message_rep);
 
         if (state.status != SERIALIZE_STATE_READING)
+        {
             status = VOTING_ENCRYPTER_DESERIALIZE_ERROR;
+        }
     }
 
     // Write the fixed length part of the line
@@ -404,17 +406,23 @@ Voting_Encrypter_write_ballot(FILE *out, char *external_identifier,
         const char *header_fmt = "%s\t";
         int io_status = fprintf(out, header_fmt, external_identifier);
         if (io_status < 0)
+        {
             status = VOTING_ENCRYPTER_IO_ERROR;
+        }
     }
 
     // Write the selections
-    for (uint32_t i = 0;
-         i < message_rep.num_selections && status == VOTING_ENCRYPTER_SUCCESS; i++) {
+    for (uint32_t i = 0; i < message_rep.num_selections && status == VOTING_ENCRYPTER_SUCCESS; i++) 
+    {
         if(fprintf(out, "\t") < 1)
+        {
             status = VOTING_ENCRYPTER_IO_ERROR;
+        }
 
-        if(VOTING_ENCRYPTER_SUCCESS == status) {
-            if(!Crypto_encryption_fprint(out, &message_rep.selections[i])) {
+        if(status == VOTING_ENCRYPTER_SUCCESS) 
+        {
+            if(!Crypto_encryption_fprint(out, &message_rep.selections[i])) 
+            {
                 status = VOTING_ENCRYPTER_IO_ERROR;
             }
         }
@@ -425,7 +433,9 @@ Voting_Encrypter_write_ballot(FILE *out, char *external_identifier,
     {
         int put_status = fputc('\n', out);
         if (put_status == EOF)
+        {
             status = VOTING_ENCRYPTER_IO_ERROR;
+        }
     }
 
     // free the ballot rep

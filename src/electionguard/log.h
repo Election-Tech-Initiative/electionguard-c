@@ -20,6 +20,12 @@ static void log_stderr(const char *fmt, ...)
     va_end(args);
 }
 
+#ifdef TRACE
+#define TRACE_PRINT(x) do { log_stdout x; } while (0)
+#else
+#define TRACE_PRINT(x) do {} while (0)
+#endif
+
 #ifdef DEBUG
 #define DEBUG_PRINT(x) do { log_stdout x; } while (0)
 #else

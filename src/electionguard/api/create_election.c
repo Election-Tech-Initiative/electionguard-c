@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include <electionguard/api/create_election.h>
+#include <log.h>
 
 #include "api/base_hash.h"
 
@@ -33,10 +34,8 @@ static KeyCeremony_Trustee trustees[MAX_TRUSTEES];
 bool API_CreateElection(struct api_config *config,
                         struct trustee_state *trustee_states)
 {
-#ifdef DEBUG_PRINT
-    printf("API_CreateElection::Config:\n\tnum_trustees: %d\n\tthreshold: %d\n\tsubgroup_order: %d\n\telection_meta: %s\n",
-            config->num_trustees, config->threshold, config->subgroup_order, config->election_meta);
-#endif
+    DEBUG_PRINT(("API_CreateElection::Config:\n\tnum_trustees: %d\n\tthreshold: %d\n\tsubgroup_order: %d\n\telection_meta: %s\n",
+            config->num_trustees, config->threshold, config->subgroup_order, config->election_meta));
 
     bool ok = true;
 
@@ -44,6 +43,7 @@ bool API_CreateElection(struct api_config *config,
 
     Crypto_parameters_new();
     api_config = *config;
+    DEBUG_PRINT(("\nCreateElection: Create Base Hash\n"));
     create_base_hash_code(api_config);
 
     // Initialize
@@ -51,13 +51,19 @@ bool API_CreateElection(struct api_config *config,
     if (ok)
         ok = initialize_coordinator();
 
+    if (!ok) DEBUG_PRINT(("\nCreateElection: initialize_coordinator - FAILED!\n"));
+
     if (ok)
         ok = initialize_trustees();
+
+    if (!ok) DEBUG_PRINT(("\nCreateElection: initialize_trustees - FAILED!\n"));
 
     // Key Ceremony
 
     if (ok)
         ok = generate_keys();
+
+    if (!ok) DEBUG_PRINT(("\nCreateElection: generate_keys - FAILED!\n"));
 
     struct all_keys_received_message all_keys_received = {.bytes = NULL};
 
@@ -68,10 +74,14 @@ bool API_CreateElection(struct api_config *config,
             ok = false;
     }
 
+    if (!ok) DEBUG_PRINT(("\nCreateElection: receive_keys - FAILED!\n"));
+
     // Share Generation
 
     if (ok)
         ok = generate_shares(all_keys_received);
+
+    if (!ok) DEBUG_PRINT(("\nCreateElection: generate_shares - FAILED!\n"));
 
     struct all_shares_received_message all_shares_received = {.bytes = NULL};
 
@@ -82,10 +92,14 @@ bool API_CreateElection(struct api_config *config,
             ok = false;
     }
 
+    if (!ok) DEBUG_PRINT(("\nCreateElection: receive_shares - FAILED!\n"));
+
     // Verification
 
     if (ok)
         ok = verify_shares(all_shares_received);
+
+    if (!ok) DEBUG_PRINT(("\nCreateElection: verify_shares - FAILED!\n"));
 
     // Publish joint key
 
@@ -96,10 +110,14 @@ bool API_CreateElection(struct api_config *config,
             ok = false;
     }
 
+    if (!ok) DEBUG_PRINT(("\nCreateElection: publish_joint_key - FAILED!\n"));
+
     // Export trustee state
 
     if (ok)
         ok = export_trustee_states(trustee_states);
+
+    if (!ok) DEBUG_PRINT(("\nCreateElection: export_trustee_states - FAILED!\n"));
 
     // Cleanup
 
@@ -193,12 +211,13 @@ bool generate_keys(void)
     for (uint32_t i = 0; i < api_config.num_trustees && ok; i++)
     {
         struct key_generated_message key_generated = {.bytes = NULL};
-
         struct KeyCeremony_Trustee_generate_key_r result =
             KeyCeremony_Trustee_generate_key(trustees[i], base_hash_code);
 
         if (result.status != KEYCEREMONY_TRUSTEE_SUCCESS)
+        {
             ok = false;
+        }
         else
             key_generated = result.message;
     
@@ -210,7 +229,9 @@ bool generate_keys(void)
                     key_generated
                 );
             if (status != KEYCEREMONY_COORDINATOR_SUCCESS)
-                ok = false;            
+            {
+                ok = false;
+            }        
         }
 
         if (key_generated.bytes != NULL)

@@ -1,3 +1,5 @@
+.. image:: images/electionguard-banner.svg
+
 🗳️ ElectionGuard SDK C Implementation
 =====================================
 

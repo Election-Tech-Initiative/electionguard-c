@@ -73,7 +73,7 @@ Decryption_Coordinator_new(uint32_t num_trustees, uint32_t threshold)
 
 void Decryption_Coordinator_free(Decryption_Coordinator coordinator) 
 {
-    for(uint32_t i = 0; i < coordinator->num_tallies && coordinator->tallies_initialized; i++)
+    for(uint64_t i = 0; i < coordinator->num_tallies && coordinator->tallies_initialized; i++)
     {
         Crypto_encryption_rep_free(&coordinator->tallies[i]);
     }
@@ -185,7 +185,7 @@ Decryption_Coordinator_receive_share(Decryption_Coordinator coordinator,
     }
 
     // free 
-    for (uint32_t i = 0; i < share_rep.num_tallies; i++)
+    for (uint64_t i = 0; i < share_rep.num_tallies; i++)
     {
         Crypto_encryption_rep_free(&share_rep.tally_share[i]);
     }

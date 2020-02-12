@@ -537,7 +537,7 @@ Voting_Coordinator_import_encrypted_ballots(Voting_Coordinator coordinator,
     int scanResult = 0;
     enum Voting_Coordinator_status load_status = VOTING_COORDINATOR_SUCCESS;
 
-    for (uint32_t i = 0; i < count && load_status == VOTING_COORDINATOR_SUCCESS; i++) {
+    for (uint64_t i = 0; i < count && load_status == VOTING_COORDINATOR_SUCCESS; i++) {
 
         out_external_identifiers[i] = malloc(MAX_EXTERNAL_ID_LENGTH*sizeof(char));
         if (out_external_identifiers[i] == NULL)

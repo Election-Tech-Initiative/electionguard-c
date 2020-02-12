@@ -281,6 +281,7 @@ bignum_status export_to_64_t_pad(const mpz_t v, int ct, uint64_t **out_result)
         {
             status = BIGNUM_INSUFFICIENT_MEMORY;
             free(result); 
+            goto Cleanup;
         }
     }
 
@@ -294,6 +295,7 @@ bignum_status export_to_64_t_pad(const mpz_t v, int ct, uint64_t **out_result)
             DEBUG_PRINT(("\nexport_to_64_t_pad: have: %d - FAIL!\n", written));
             status = BIGNUM_IO_ERROR;
             free(result);
+            goto Cleanup;
         }
         else
         {
@@ -312,6 +314,7 @@ bignum_status export_to_64_t_pad(const mpz_t v, int ct, uint64_t **out_result)
         *out_result = result; 
     }
 
+ Cleanup:
     // clean up
     if (tmp != NULL)
     {

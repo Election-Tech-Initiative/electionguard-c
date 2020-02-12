@@ -94,7 +94,7 @@ int main()
 
     char *encrypted_ballots_filename = NULL;
     char *encrypted_output_path = "./ballots_encrypter/"; // This outputs to the directy above the cwd.
-    char encrypted_output_prefix[50];
+    char encrypted_output_prefix[60];
     
     //generate a unique file name
     time_t now = time(NULL);
@@ -259,7 +259,7 @@ int main()
     {
         // Assigning an output_path fails if this folder doesn't already exist
         char *output_path = "./ballots/"; // This outputs to the directy above the cwd.
-        char output_prefix[50];
+        char output_prefix[60];
 
         sprintf(output_prefix, "%s_%d_%d_%d", "registered-ballots", 
         local_time->tm_year + 1900, local_time->tm_mon + 1, local_time->tm_mday);

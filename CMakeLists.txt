@@ -171,7 +171,7 @@ add_test(NAME build_ballot_parser
       "${CMAKE_CTEST_COMMAND}"
         --build-and-test "${PROJECT_SOURCE_DIR}/examples/ballot_parser" "${CMAKE_CURRENT_BINARY_DIR}/ballot_parser_build"
         --build-generator ${CMAKE_GENERATOR}
-        --test-command ballot_parser ${PROJECT_SOURCE_DIR}/examples/ballot_parser/ballots
+        --test-command ballot_parser ${PROJECT_SOURCE_DIR}/examples/ballot_parser/ballot_samples
 )
 
 include(CheckIncludeFiles)

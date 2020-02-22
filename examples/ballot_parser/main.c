@@ -44,7 +44,7 @@ int main(int argc, char** argv)
         0, 
         MAX_BALLOT_PAYLOAD, 
         NUM_SELECTIONS, 
-        lpzTestFilename, //"/Code/electionguard-c/examples/ballot_parser/ballots/valid", 
+        lpzTestFilename, 
         loaded_external_identifiers,
         loaded_encrypted_ballots
     );
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
         0, 
         MAX_BALLOT_PAYLOAD, 
         NUM_SELECTIONS, 
-        lpzTestFilename, //"/Code/electionguard-c/examples/ballot_parser/ballots/valid2", 
+        lpzTestFilename, 
         loaded_external_identifiers,
         loaded_encrypted_ballots
     );
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
         0, 
         MAX_BALLOT_PAYLOAD, 
         NUM_SELECTIONS, 
-        lpzTestFilename, //"/Code/electionguard-c/examples/ballot_parser/ballots/boundary_names", 
+        lpzTestFilename,
         loaded_external_identifiers,
         loaded_encrypted_ballots
     );
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
         0, 
         MAX_BALLOT_PAYLOAD, 
         NUM_SELECTIONS, 
-        lpzTestFilename, //"/Code/electionguard-c/examples/ballot_parser/ballots/exploit", 
+        lpzTestFilename,
         loaded_external_identifiers,
         loaded_encrypted_ballots
     );
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
         0, 
         MAX_BALLOT_PAYLOAD, 
         NUM_SELECTIONS, 
-        lpzTestFilename, //"/Code/electionguard-c/examples/ballot_parser/ballots/exploit", 
+        lpzTestFilename, 
         loaded_external_identifiers,
         loaded_encrypted_ballots
     );

@@ -153,6 +153,7 @@ install(
 add_subdirectory(docs)
 
 file(MAKE_DIRECTORY  "${CMAKE_CURRENT_BINARY_DIR}/api_build")
+file(MAKE_DIRECTORY  "${CMAKE_CURRENT_BINARY_DIR}/ballot_parser_build")
 set(CMAKE_CONFIGURATION_TYPES "Debug" CACHE STRING "" FORCE)
 
 add_test(NAME build_api
@@ -162,6 +163,15 @@ add_test(NAME build_api
         --build-and-test "${PROJECT_SOURCE_DIR}/examples/api" "${CMAKE_CURRENT_BINARY_DIR}/api_build"
         --build-generator ${CMAKE_GENERATOR}
         --test-command api
+)
+
+add_test(NAME build_ballot_parser
+   COMMAND "${CMAKE_COMMAND}"
+      -E env ElectionGuard_DIR=${CMAKE_CURRENT_BINARY_DIR}/ElectionGuard
+      "${CMAKE_CTEST_COMMAND}"
+        --build-and-test "${PROJECT_SOURCE_DIR}/examples/ballot_parser" "${CMAKE_CURRENT_BINARY_DIR}/ballot_parser_build"
+        --build-generator ${CMAKE_GENERATOR}
+        --test-command ballot_parser ${PROJECT_SOURCE_DIR}/examples/ballot_parser/ballots
 )
 
 include(CheckIncludeFiles)

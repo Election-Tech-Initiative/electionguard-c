@@ -142,10 +142,14 @@ API_LoadBallots_status load_ballots(uint64_t start_index,
     {
         case VOTING_COORDINATOR_INSUFFICIENT_MEMORY:
             return API_LOADBALLOTS_INSUFFICIENT_MEMORY;
-        // TODO: other cases
+        case VOTING_COORDINATOR_INVALID_DATA:
+            return API_LOADBALLOTS_INVALID_DATA_ERROR;
         case VOTING_COORDINATOR_END_OF_FILE:
         case VOTING_COORDINATOR_SUCCESS:
-        default:
             return API_LOADBALLOTS_SUCCESS;
+        // TODO: other cases
+        // Error handling - Do not deafult to success
+        default:
+            return API_LOADBALLOTS_UNDEFINED_ERROR;
     }
 }

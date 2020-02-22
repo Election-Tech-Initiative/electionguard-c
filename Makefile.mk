@@ -1,4 +1,4 @@
-.PHONY: add-dependencies build build-debug clean run-api test
+.PHONY: add-dependencies build build-debug clean run-api run-ballot-parser test
 
 BUILD_DEBUG?=true
 
@@ -48,7 +48,7 @@ endif
 	cmake --build build
 
 clean:
-	rm -rf ./build/* ./api_build/*
+	rm -rf ./build/* ./api_build/* ./ballot_parser_build/*
 
 run-api: build
 	if [ ! -d "api_build" ]; then mkdir api_build; fi
@@ -60,6 +60,18 @@ else
 	ElectionGuard_DIR=$(ELECTIONGUARD_DIR) cmake -S examples/api -B api_build
 	cmake --build api_build --target api
 	./api_build/api
+endif
+
+run-ballot-parser: build
+	if [ ! -d "ballot_parser_build" ]; then mkdir ballot_parser_build; fi
+ifeq ($(OPERATING_SYSTEM),Windows)
+	CMAKE_PREFIX_PATH="./build/ElectionGuard" cmake -S examples/ballot_parser -B ballot_parser_build -G "MSYS Makefiles"
+	cmake --build ballot_parser_build --target ballot_parser
+	PATH=$(PWD)/build:$$PATH; ./ballot_parser_build/ballot_parser
+else
+	ElectionGuard_DIR=$(ELECTIONGUARD_DIR) cmake -S examples/ballot_parser -B ballot_parser_build
+	cmake --build ballot_parser_build --target ballot_parser
+	./ballot_parser_build/ballot_parser
 endif
 
 test: build

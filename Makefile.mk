@@ -67,11 +67,11 @@ run-ballot-parser: build
 ifeq ($(OPERATING_SYSTEM),Windows)
 	CMAKE_PREFIX_PATH="./build/ElectionGuard" cmake -S examples/ballot_parser -B ballot_parser_build -G "MSYS Makefiles"
 	cmake --build ballot_parser_build --target ballot_parser
-	PATH=$(PWD)/build:$$PATH; ./ballot_parser_build/ballot_parser
+	PATH=$(PWD)/build:$$PATH; ./ballot_parser_build/ballot_parser "$(realpath .)/examples/ballot_parser/ballot_samples"
 else
 	ElectionGuard_DIR=$(ELECTIONGUARD_DIR) cmake -S examples/ballot_parser -B ballot_parser_build
 	cmake --build ballot_parser_build --target ballot_parser
-	./ballot_parser_build/ballot_parser
+	./ballot_parser_build/ballot_parser "$(realpath .)/examples/ballot_parser/ballot_samples"
 endif
 
 test: build

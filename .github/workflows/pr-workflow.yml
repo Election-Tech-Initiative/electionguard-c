@@ -5,7 +5,7 @@ on: [pull_request]
 jobs:
   linux_build:
     name: 'Linux Build'
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-18.04'
     steps:
     - uses: actions/checkout@v1
       with:
@@ -13,8 +13,8 @@ jobs:
     - name: Upgrade cmake
       run: | 
         sudo mv /usr/local/bin/cmake /usr/local/bin/cmake-old
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 8611B7A28669BB93
-        sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main'
+        wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
+        sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
         sudo apt-get update && sudo apt-get install -y cmake
         cmake --version
     - name: Build C Library

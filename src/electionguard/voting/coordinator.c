@@ -448,20 +448,95 @@ Voting_Coordinator_read_ballot(FILE *in,
                                struct encryption_rep *out_selections)
 {
     enum Voting_Coordinator_status status = VOTING_COORDINATOR_SUCCESS;
+    char* buffer = NULL;
 
-    // get the external ballot Id
+    // Allocate a buffer equal to MAX_EXTERNAL_ID_LENGTH to securely read the external identifier
+    buffer = malloc( MAX_EXTERNAL_ID_LENGTH );
+    if( buffer == NULL )
     {
-        int num_read = fscanf(in, "%s", out_external_identifier);
+        DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: VOTING_COORDINATOR_INSUFFICIENT_MEMORY\n"));
+        return VOTING_COORDINATOR_INSUFFICIENT_MEMORY;
+    }
+
+    // try get the external ballot Id
+    {
+        int num_read = 0;
+        long bytes_read = 0;
+        long pos_start = 0;
+        long pos_end = 0;
+
+        // get the start position on the file
+        pos_start =  ftell(in);
+
+        // Read up to MAX_EXTERNAL_ID_LENGTH - 1 bytes into a buffer, which should be the max number of characters allowed
+        // NOTE: +1 byte for string null terminator, fgets will automatically append it. 2nd parameter includes this character
+        if( fgets( buffer, MAX_EXTERNAL_ID_LENGTH, in) == NULL )
+        {
+            DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: VOTING_COORDINATOR_END_OF_FILE\n"));
+            status = VOTING_COORDINATOR_END_OF_FILE;
+            goto cleanup;
+        }
+
+        // get the current position of the file
+        pos_end =  ftell(in);
+
+        // Veirfy that we are not simply reading a newline markup
+        // If we are, read the buffer again, discarding the end-of-line event
+        if( ((pos_end - pos_start) <= 2) && ((buffer[0] == 0x0A) || (buffer[0] == 0x0D)))
+        {
+            pos_start =  ftell(in);
+
+            if( fgets( buffer, MAX_EXTERNAL_ID_LENGTH, in) == NULL )
+            {
+                DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: VOTING_COORDINATOR_END_OF_FILE\n"));
+                status = VOTING_COORDINATOR_END_OF_FILE;
+                goto cleanup;
+            }
+
+            pos_end =  ftell(in);
+        }
+
+        // Read the external identifier from the buffer
+        num_read = sscanf(buffer, "%s", out_external_identifier);
+
         if (num_read == EOF)
         {
             DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: VOTING_COORDINATOR_END_OF_FILE\n"));
             status = VOTING_COORDINATOR_END_OF_FILE;
+            goto cleanup;
         }
         else if (num_read != 1)
         {
+            DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: VOTING_COORDINATOR_IO_ERROR\n"));
             status = VOTING_COORDINATOR_IO_ERROR;
+            goto cleanup;
+        }
+
+        // Since we may read more than the external identifier from the file, gets its actual length
+        bytes_read = strlen(out_external_identifier);
+
+        // If we read a MAX_EXTERNAL_ID_LENGTH identifier, we need to verify that the next character in the file is the expected \t
+        // NOTE: remember that MAX_EXTERNAL_ID_LENGTH includes the string null character
+        if( (bytes_read == ( MAX_EXTERNAL_ID_LENGTH - 1 )) && (fgets( buffer, 2, in) != NULL ))
+        {
+            DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: Verifying edge condition for external identifier\n"));
+            if( buffer[0] != '\t' )
+            {
+                DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: VOTING_COORDINATOR_INVALID_DATA\n"));
+                status = VOTING_COORDINATOR_INVALID_DATA;
+                goto cleanup;
+            }
+        }
+
+        // Move the file position back to the end of the identifier
+        if( fseek(in, pos_start +  bytes_read + 1, SEEK_SET) != 0)
+        {
+            DEBUG_PRINT(("\nVoting_Coordinator_read_ballot: VOTING_COORDINATOR_IO_ERROR\n"));
+            status = VOTING_COORDINATOR_IO_ERROR;
+            goto cleanup;
         }
     }
+
     
     for (uint32_t i = 0;
          i < num_selections && status == VOTING_COORDINATOR_SUCCESS; i++)
@@ -512,6 +587,8 @@ Voting_Coordinator_read_ballot(FILE *in,
         }
     }
 
+cleanup:
+    free(buffer);
     return status;
 }
 
@@ -608,6 +685,12 @@ Voting_Coordinator_import_encrypted_ballots(Voting_Coordinator coordinator,
         // TODO: write scan result count to out param
         // so consumers know how many were loaded
         scanResult++;
+    }
+
+    // Error handling: If not EOF or Success state during a file loading, fail
+    if (load_status != VOTING_COORDINATOR_SUCCESS || load_status != VOTING_COORDINATOR_END_OF_FILE )
+    {
+        status = load_status;
     }
 
     return status;

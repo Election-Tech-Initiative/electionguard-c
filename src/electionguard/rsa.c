@@ -37,7 +37,8 @@ void generate_keys(rsa_private_key* priv_key, rsa_public_key* pub_key)
     /* Select p */
     for(int i = 0; i < BUFFER_SIZE; i++)
     {
-        buffer[i] = RandomSource_get_byte(source) % 0xFF;
+        enum RandomSource_status source_status = RandomSource_get_byte(source, buffer[i]) % 0xFF;
+        assert(source_status == RANDOM_SOURCE_SUCCESS);
     }
 
     buffer[0] |= 0xC0;                                  // Set the top two bits to 1 to ensure int(tmp) is relatively large

@@ -58,18 +58,23 @@ void RandomSource_free(RandomSource source)
 #endif
 }
 
-uint8_t RandomSource_get_byte(RandomSource source)
+enum RandomSource_status RandomSource_get_byte(RandomSource source, uint8_t ret)
 {
+    enum RandomSource_status result = RANDOM_SOURCE_SUCCESS;
     size_t item_count;
-    uint8_t ret;
 #ifdef HAVE_BCRYPTGENRANDOM
-    //NTSTATUS ntstatus =
-        //BCryptGenRandom(NULL, &ret, 1, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-        ret = 1;
+    NTSTATUS ntstatus =
+        BCryptGenRandom(NULL, &ret, 1, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+
+        if (ntstatus != STATUS_SUCCESS)
+        {
+            result = RANDOM_SOURCE_IO_ERROR;
+        }
+        
 #else
     fread(&ret, 1, 1, source->dev_random);
 #endif
-    return ret;
+    return result;
 }
 
 enum RandomSource_status RandomSource_uniform_o(RandomSource source,

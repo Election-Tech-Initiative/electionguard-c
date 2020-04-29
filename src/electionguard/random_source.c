@@ -5,6 +5,7 @@
 
 #ifdef HAVE_BCRYPTGENRANDOM
 #include <windows.h>
+#include <assert.h>
 #include <ntstatus.h>
 #include <bcrypt.h>
 #endif
@@ -63,9 +64,9 @@ uint8_t RandomSource_get_byte(RandomSource source)
     size_t item_count;
     uint8_t ret;
 #ifdef HAVE_BCRYPTGENRANDOM
-    //NTSTATUS ntstatus =
-        //BCryptGenRandom(NULL, &ret, 1, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-        ret = 1;
+    NTSTATUS ntstatus =
+        BCryptGenRandom(NULL, &ret, 1, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+    assert(ntstatus == STATUS_SUCCESS);
 #else
     fread(&ret, 1, 1, source->dev_random);
 #endif

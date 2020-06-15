@@ -10,6 +10,16 @@
 .. |License| image:: https://img.shields.io/github/license/microsoft/ElectionGuard-SDK-C-Implementation.svg
    :target: https://github.com/microsoft/ElectionGuard-SDK-C-Implementation/blob/master/LICENSE
 
+---------------------
+
+Note: This repository has been deprecated & transitioned
+########################################################
+As of 06/15/2020, this repository is no longer being actively maintained. ElectionGuard development has transitioned to the `ElectionGuard-Python <https://github.com/microsoft/electionguard-python>`_ Repo.
+
+This repository will remain open sourced and available, but will no longer be actively maintained or updated. Development is underway for a replacement low-level language repository (C/C++) and updates will be posted here and on our `Main repository Page <https://github.com/microsoft/ElectionGuard>`_. This URL will become archived and read-only in Summer of 2020.
+
+--------------------------
+
 This is the core SDK that performs election functions such as vote encryption, decryption, key generation, and tallying. This code is meant to be run on voting system hardware and to be integrated into existing (or new) voting system software. The ElectionGuard SDK is written in C and is meant to add end-to-end verifiability and encryption into 3rd party comprehensive voting systems. There is also a simplistic, proof-of-concept C application to understand how the API should be called.
 
 This implementation of the ElectionGuard SDK serves to showcase the API

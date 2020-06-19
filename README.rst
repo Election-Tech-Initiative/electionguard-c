@@ -1,7 +1,9 @@
 .. image:: images/electionguard-banner.svg
 
-🗳️ ElectionGuard SDK C Implementation
+🗳️ ElectionGuard SDK C Implementation (Deprecated)
 =====================================
+
+⚠️ Warning: This implementation is deprecated. Revisit `ElectionGuard for latest <https://github.com/microsoft/electionguard>`_.
 
 |Release| |License|
 

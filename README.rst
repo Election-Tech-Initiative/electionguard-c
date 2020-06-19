@@ -3,9 +3,9 @@
 🗳️ ElectionGuard SDK C Implementation (Deprecated)
 =====================================
 
-⚠️ Warning: This implementation is deprecated. Revisit `ElectionGuard for latest <https://github.com/microsoft/electionguard>`_.
+|Deprecated| |Release| |License|
 
-|Release| |License|
+.. |Deprecated| image:: https://img.shields.io/badge/status-deprecated-red.svg
 
 .. |Release| image:: https://github.com/microsoft/ElectionGuard-SDK-C-Implementation/workflows/Release/badge.svg
 
@@ -14,11 +14,10 @@
 
 ---------------------
 
-Note: This repository has been deprecated & transitioned
-########################################################
-As of 06/15/2020, this repository is no longer being actively maintained. ElectionGuard development has transitioned to the `ElectionGuard-Python <https://github.com/microsoft/electionguard-python>`_ Repo.
+**⚠️ Note:** Repository has been deprecated
 
-This repository will remain open sourced and available, but will no longer be actively maintained or updated. Development is underway for a replacement low-level language repository (C/C++) and updates will be posted here and on our `Main repository Page <https://github.com/microsoft/ElectionGuard>`_. This URL will become archived and read-only in Summer of 2020.
+As of 06/15/2020, this repository is no longer being actively maintained. For the latest ElectionGuard development, visit the `main repository page <https://aka.ms/electionguard>`_. This repository will remain open sourced and available, but will no longer be actively maintained or updated. The URL will become archived and read-only.
+Note: This repository has been deprecated & transitioned
 
 --------------------------
 

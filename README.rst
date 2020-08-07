@@ -297,4 +297,16 @@ Current Limitations
 Contributing
 ------------------
 
-Help defend democracy and `contribute to the project <CONTRIBUTING.md>`_.
+# Contributors
+
+  * Matt Bauer: Initial executable specification, protocol feedback
+  * David Christiansen: Informal walkthrough, Readme design
+  * Joey Dodds: API refinement, SDK Crypography implementation
+  * Jason Graalum: Team leadership and management
+  * Kenny Foner: Demo encryption server, Rust verifier
+  * Luke Myers: Schema design, Demo frontend integration
+  * Stuart Pernsteiner: Rust verifier
+  * Aaron Tomb: Executable specification
+  * Jake Waksbaum: Schema design, Initial SDK implementation
+  * Daniel Wagner: SDK Cryptography Implementation
+  * Joe Kiniry: initial system design
